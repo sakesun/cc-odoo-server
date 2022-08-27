@@ -131,3 +131,4 @@ dmypy.json
 /odoo/
 /addons/
 /odoo-server-config.json
+/venv/
