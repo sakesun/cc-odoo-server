@@ -9,10 +9,6 @@ function Get-DefaultBranch($targetName) {
     return $DEFAULT_BRANCH
 }
 
-function loadConfig {
-    return (Get-Content -Path $CONFIG_FILE | ConvertFrom-Json -AsHashtable)
-}
-
 function localGitSource($path) {
     return "file://$($path.Replace('\', '/'))"
 }
@@ -61,6 +57,11 @@ function checkConfigFile {
         $defaultContent | Out-File $CONFIG_FILE
     }
     return $configExists
+}
+
+function loadConfig {
+    checkConfigFile
+    return (Get-Content -Path $CONFIG_FILE | ConvertFrom-Json -AsHashtable)
 }
 
 function checkOut($source, $branch, $target) {
