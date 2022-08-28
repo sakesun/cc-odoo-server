@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-/odoo/
-/addons/
-/odoo-server-config.json
-/venv/
+/{{ cookiecutter.project_slug }}/odoo/
+/{{ cookiecutter.project_slug }}/addons/
+/{{ cookiecutter.project_slug }}/odoo-server-config.json
+/{{ cookiecutter.project_slug }}/venv/
