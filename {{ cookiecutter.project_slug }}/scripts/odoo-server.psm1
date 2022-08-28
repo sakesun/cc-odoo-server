@@ -60,7 +60,6 @@ function checkConfigFile {
 }
 
 function loadConfig {
-    checkConfigFile
     return (Get-Content -Path $CONFIG_FILE | ConvertFrom-Json -AsHashtable)
 }
 
@@ -73,6 +72,7 @@ function checkOut($source, $branch, $target) {
 }
 
 function Initialize-Sources() {
+    if (! checkConfigFile) { return }
     $config = loadConfig
     if ($config.odoo -ne $null) {
         checkOut $config.odoo.source $config.odoo.branch $PATH_ODOO
@@ -205,6 +205,7 @@ function Get-InstalledAddons {
 }
 
 function Initialize-Venv {
+    if (! checkConfigFile) { return }
     pyenv exec python -m venv "$PATH_VENV"
     . $PATH_VENV/Scripts/activate.ps1
     python -m ensurepip   --upgrade
@@ -315,6 +316,7 @@ function Test-Odoo {
 }
 
 function Initialize-Config {
+    if (! checkConfigFile) { return }
     $config = loadConfig
     $arguments = @()
     if ($config.server -ne $null) {
@@ -338,6 +340,7 @@ function Initialize-Config {
 }
 
 function Initialize-Everything {
+    if (! checkConfigFile) { return }
     Initialize-Sources
     Initialize-Venv
     Initialize-Config
@@ -350,6 +353,7 @@ function Remove-RecursiveForce($target) {
 }
 
 function Reset-Everything {
+    if (! checkConfigFile) { return }
     Remove-RecursiveForce $PATH_VENV
     Remove-RecursiveForce $PATH_ODOO
     Remove-RecursiveForce $PATH_ADDONS
