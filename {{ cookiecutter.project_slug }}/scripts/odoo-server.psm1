@@ -20,23 +20,23 @@ function checkConfigFile {
         $defaultContent = (
             ConvertTo-Json -Depth 100 (
                 [ordered]@{
-                    "odoo" = @{
+                    "odoo" = [ordered]@{
                         "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo");
                         "branch" = $branch
                     };
-                    "addons" = @{
+                    "addons" = [ordered]@{
                         "enterprise" = @{
                             "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise");
                             "branch" = $branch;
                             "dirs"   = @(".");
                         };
-                        "design-themes" = @{
+                        "design-themes" = [ordered]@{
                             "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes");
                             "branch" = $branch;
                             "dirs"   = @(".");
                         }
                     };
-                    "db" = @{
+                    "db" = [ordered]@{
                         "server" = "127.0.0.1";
                         "port"   = 5432
                         "root"   = "postgres";
@@ -44,7 +44,7 @@ function checkConfigFile {
                         "user"   = "user";
                         "pass"   = "password"
                     };
-                    "server" = @{
+                    "server" = [ordered]@{
                         "http-port"        = 8069;
                         "longpolling-port" = 8072;
                     }
