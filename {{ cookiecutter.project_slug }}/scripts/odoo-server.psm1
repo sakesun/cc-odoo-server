@@ -161,8 +161,8 @@ function tableExists($config, $table) {
     return queryExists($rows)
 }
 
-function moduleExists($config, $module) {
-    $sql = "select name from ir_module_module where name = '$module'"
+function addonInstalled($config, $module) {
+    $sql = "select name from ir_module_module where name = '$module' and state = 'installed'"
     $rows = query $config $sql
     return queryExists($rows)
 }
@@ -421,7 +421,7 @@ function initializeBaseAndSaveConfig($config) {
         $arguments += "--http-port=$($config.server['http-port'])"
         $arguments += "--longpolling-port=$($config.server['longpolling-port'])"
     }
-    $baseInstalled = (tableExists $config "ir_module_module") -And (moduleExists $config "base")
+    $baseInstalled = (tableExists $config "ir_module_module") -And (addonInstalled $config "base")
     if (-Not $baseInstalled) {
         Invoke-OdooBin -- `
           --stop-after-init `
