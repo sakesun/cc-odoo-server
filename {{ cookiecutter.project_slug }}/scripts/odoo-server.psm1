@@ -19,7 +19,7 @@ function Get-DefaultConfig {
                     "branch" = $branch
                 };
                 "addons" = [ordered]@{
-                    "enterprise" = @{
+                    "enterprise" = [ordered]@{
                         "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
                         "branch" = $branch
                         "dirs"   = @(".")
@@ -103,7 +103,9 @@ function pgQuery($server, $port, $dbname, $user, $pass, $sql) {
         try {
             $table = [System.Data.DataTable]::new()
             $table.Load($reader)
-            return $table
+            foreach ($r in $table.Rows) {
+                $r
+            }
         } finally {
             [void] $reader.Close()
         }
@@ -130,16 +132,23 @@ function queryWithRoot($config, $sql) {
       -sql    $sql
 }
 
+function queryExists($rows) {
+    foreach ($r in $rows) {
+        return $true
+    }
+    return $false
+}
+
 function databaseExists($config) {
     $sql = "select datname from pg_catalog.pg_database where datname = '$($config.db.name)'"
-    $t = queryWithRoot $config $sql
-    return ($t.Rows.Count -ge 1)
+    $rows = queryWithRoot $config $sql
+    return queryExists($rows)
 }
 
 function userExists($config) {
     $sql = "select usename from pg_catalog.pg_user where usename = '$($config.db.user)'"
-    $t = queryWithRoot $config $sql
-    return ($t.Rows.Count -ge 1)
+    $rows = queryWithRoot $config $sql
+    return queryExists($rows)
 }
 
 function tableExists($config, $table) {
@@ -148,14 +157,14 @@ function tableExists($config, $table) {
         "  where schemaname = 'public'"
         "    and tablename  = '$table'"
     ) -Join "`n"
-    $t = queryWithRoot $config $sql
-    return ($t.Rows.Count -ge 1)
+    $rows = queryWithRoot $config $sql
+    return queryExists($rows)
 }
 
 function moduleExists($config, $module) {
     $sql = "select name from ir_module_module where name = '$module'"
-    $t = query $config $sql
-    return ($t.Rows.Count -ge 1)
+    $rows = query $config $sql
+    return queryExists($rows)
 }
 
 function dropDatabaseAndUser($config) {
@@ -254,7 +263,7 @@ function addIfValidAddon {
         [System.Collections.ArrayList] $list,
         [string[]] $paths
     )
-    ForEach ($p in $paths) {
+    foreach ($p in $paths) {
         if (isValidAddonPath $p) {
             [void] $list.Add((Get-Item $p).FullName)
         }
