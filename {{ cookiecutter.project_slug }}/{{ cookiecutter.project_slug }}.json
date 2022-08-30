@@ -1,0 +1,34 @@
+{
+  "odoo": {
+    "source": "file://D:/projects/cc-odoo-server/{{ cookiecutter.project_slug }}/scripts/../../odoo-src/odoo",
+    "branch": "15.0"
+  },
+  "addons": {
+    "enterprise": {
+      "branch": "15.0",
+      "dirs": [
+        "."
+      ],
+      "source": "file://D:/projects/cc-odoo-server/{{ cookiecutter.project_slug }}/scripts/../../odoo-src/enterprise"
+    },
+    "design-themes": {
+      "source": "file://D:/projects/cc-odoo-server/{{ cookiecutter.project_slug }}/scripts/../../odoo-src/design-themes",
+      "branch": "15.0",
+      "dirs": [
+        "."
+      ]
+    }
+  },
+  "db": {
+    "server": "127.0.0.1",
+    "port": 5432,
+    "root": "postgres",
+    "name": "{{ cookiecutter.db_name }}",
+    "user": "{{ cookiecutter.db_user }}",
+    "pass": "{{ cookiecutter.db_pass }}"
+  },
+  "server": {
+    "http-port": 8069,
+    "longpolling-port": 8072
+  }
+}

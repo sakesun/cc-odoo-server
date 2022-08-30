@@ -3,59 +3,61 @@ $PATH_ROOT      = Join-Path $PSScriptRoot ".."
 $PATH_VENV      = Join-Path $PATH_ROOT "venv"
 $PATH_ODOO      = Join-Path $PATH_ROOT "odoo"
 $PATH_ADDONS    = Join-Path $PATH_ROOT "addons"
-$CONFIG_FILE    = Join-Path $PATH_ROOT "{{ cookiecutter.project_slug }}-config.json"
+$CONFIG_FILE    = Join-Path $PATH_ROOT "{{ cookiecutter.project_slug }}.json"
 
 function localGitSource($path) {
     return "file://$($path.Replace('\', '/'))"
 }
 
+function Get-DefaultConfig {
+    $branch = $DEFAULT_BRANCH
+    $defaultContent = (
+        ConvertTo-Json -Depth 100 (
+            [ordered]@{
+                "odoo" = [ordered]@{
+                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
+                    "branch" = $branch
+                };
+                "addons" = [ordered]@{
+                    "enterprise" = @{
+                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
+                        "branch" = $branch
+                        "dirs"   = @(".")
+                    };
+                    "design-themes" = [ordered]@{
+                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
+                        "branch" = $branch
+                        "dirs"   = @(".")
+                    }
+                };
+                "db" = [ordered]@{
+                    "server" = "127.0.0.1"
+                    "port"   = 5432
+                    "root"   = "postgres"
+                    "name"   = "{{ cookiecutter.db_name }}"
+                    "user"   = "{{ cookiecutter.db_user }}"
+                    "pass"   = "{{ cookiecutter.db_pass }}"
+                }
+                "server" = [ordered]@{
+                    "http-port"        = 8069
+                    "longpolling-port" = 8072
+                }
+            }
+        )
+    )
+    return $defaultContent
+}
+
+function Build-DefaultConfig {
+    $configExists = Test-Path -PathType Leaf $CONFIG_FILE
+    if ($configExists) { throw "$CONFIG_FILE already exists" }
+    Set-Content -Path $CONFIG_FILE -Value (Get-DefaultConfig)
+}
+
 function checkConfigFile {
     $configExists = Test-Path -PathType Leaf $CONFIG_FILE
     if (-Not $configExists) {
-        $branch = $DEFAULT_BRANCH
-        $defaultContent = (
-            ConvertTo-Json -Depth 100 (
-                [ordered]@{
-                    "odoo" = [ordered]@{
-                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
-                        "branch" = $branch
-                    };
-                    "addons" = [ordered]@{
-                        "enterprise" = @{
-                            "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
-                            "branch" = $branch
-                            "dirs"   = @(".")
-                        };
-                        "design-themes" = [ordered]@{
-                            "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
-                            "branch" = $branch
-                            "dirs"   = @(".")
-                        }
-                    };
-                    "db" = [ordered]@{
-                        "server" = "127.0.0.1"
-                        "port"   = 5432
-                        "root"   = "postgres"
-                        "name"   = "{{ cookiecutter.db_name }}"
-                        "user"   = "{{ cookiecutter.db_user }}"
-                        "pass"   = "{{ cookiecutter.db_pass }}"
-                    }
-                    "server" = [ordered]@{
-                        "http-port"        = 8069
-                        "longpolling-port" = 8072
-                    }
-                }
-            )
-        )
-        $host.ui.WriteErrorLine(
-            @(
-                "Need $CONFIG_FILE"
-                "`nSample:`n"
-                "$defaultContent"
-                ""
-            ) -Join "`n"
-        )
-        throw "Need config file"
+        throw "Need config file $CONFIG_FILE.`n`ntry Build-DefaultConfig"
     }
 }
 
@@ -468,6 +470,8 @@ function Initialize-OdooServer {
 
 Export-ModuleMember `
   -Function @(
+      "Get-DefaultConfig"
+      "Build-DefaultConfig"
       "Remove-OdooDatabaseAndUser"
       "Initialize-OdooServer"
       "Get-AllAddons"
