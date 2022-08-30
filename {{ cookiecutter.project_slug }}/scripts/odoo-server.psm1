@@ -247,13 +247,13 @@ function initializeVenv {
 }
 
 function isValidAddonPath($p) {
-    if (-Not (Test-Path $p)) { return $false }
+    if (-Not (Test-Path -PathType Container $p)) { return $false }
     $countDir = Get-ChildItem -Directory $p | Measure-Object | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
 
 function isValidAddonModulePath($p) {
-    if (-Not (Test-Path $p)) { return $false }
+    if (-Not (Test-Path -PathType Container $p)) { return $false }
     $countDir = Get-ChildItem -File -Filter __manifest__.py -Path $p | Measure-Object | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
@@ -488,4 +488,5 @@ Export-ModuleMember `
       "Get-InstallableAddons"
       "Install-AllInstallableAddons"
       "Invoke-OdooBin"
+      "Test-Odoo"
   )
