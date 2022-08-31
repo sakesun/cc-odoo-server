@@ -215,6 +215,18 @@ function initializeSources($config) {
     }
 }
 
+function Update-OdooServerSources($config) {
+    Push-Location $PATH_ODOO
+    git pull
+    Pop-Location
+
+    foreach ($addon in $config.addons.GetEnumerator()) {
+        Push-Location (Join-Path $PATH_ADDONS $addon.Name)
+        git pull
+        Pop-Location
+    }
+}
+
 function removeIfExists($target) {
     if (-Not (Test-Path -PathType Container $target)) { return }
     if (-not (($target -eq $null) -or ($target -eq ""))) {
@@ -486,6 +498,7 @@ Export-ModuleMember `
       "Build-DefaultConfig"
       "Remove-OdooDatabaseAndUser"
       "Initialize-OdooServer"
+      "Update-OdooServerSources"
       "Get-AllAddons"
       "Get-InstalledAddons"
       "Get-InstallableAddons"
