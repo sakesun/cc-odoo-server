@@ -215,7 +215,8 @@ function initializeSources($config) {
     }
 }
 
-function Update-OdooServerSources($config) {
+function Update-OdooServerSources {
+    $config = (loadConfig)
     Push-Location $PATH_ODOO
     git pull
     Pop-Location
