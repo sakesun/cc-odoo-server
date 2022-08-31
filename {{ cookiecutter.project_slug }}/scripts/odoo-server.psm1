@@ -244,6 +244,9 @@ function initializeVenv {
     python -m pip install    dbfread
     python -m pip install    dbfread
     python -m pip install    phonenumbers
+
+    # for dev
+    python -m pip install    flake8
 }
 
 function isValidAddonPath($p) {
