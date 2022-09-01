@@ -254,8 +254,6 @@ function initializeVenv {
     python -m pip install    dbfread
     python -m pip install    google_auth
     python -m pip install    dbfread
-    python -m pip install    dbfread
-    python -m pip install    dbfread
     python -m pip install    phonenumbers
 
     # for dev
