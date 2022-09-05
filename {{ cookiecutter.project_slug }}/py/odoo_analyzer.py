@@ -37,18 +37,18 @@ def iter_addon_model_classes(m):
     prefix = m.__package__
     yield from _iter_addon_model_classes(set(), (prefix + '.'), m)
 
-def _iter_addon_model_classes(done, prefix, m):
+def _iter_addon_model_classes(did, prefix, m):
     for k in dir(m):
         v = getattr(m, k)
         if is_addon_module(v):
             if not v.__package__.startswith(prefix): continue
-            if v in done: continue
-            done.add(v)
-            yield from _iter_addon_model_classes(done, prefix, v)
+            if v in did: continue
+            did.add(v)
+            yield from _iter_addon_model_classes(did, prefix, v)
         elif is_model_class(v):
             if not v.__module__.startswith(prefix): continue
-            if v in done: continue
-            done.add(v)
+            if v in did: continue
+            did.add(v)
             yield v
 
 class AddonInfo:
@@ -104,14 +104,31 @@ def get_model_name_from_class(c):
     if isinstance(n, str): return n
     return None
 
+def is_new_model(c):
+    inherit = getattr(c, '_inherit', [])
+    return (not inherit) or (c._name not in inherit)
+
+def iter_model_fields(m):
+    from odoo.fields import Field
+    for (k, v) in m.__dict__.items():
+        if isinstance(v, Field): yield (k, v)
+
+def iter_model_functions(m):
+    from types import FunctionType
+    for (k, v) in m.__dict__.items():
+        if isinstance(v, FunctionType): yield (k, v)
+
 class ModelInfo:
-    addon = None
-    model_class = None
-    name = None
+    addon             = None
+    model_class       = None
+    name              = cached_property(lambda self: get_model_name_from_class(self.model_class))
+    is_new            = cached_property(lambda self: is_new_model(self.model_class))
+    defined_fields    = cached_property(lambda self: list(iter_model_fields(self.model_class)))
+    defined_functions = cached_property(lambda self: list(iter_model_functions(self.model_class)))
+
     def __init__(self, addon, model_class):
-        self.addon = addon
-        self.model_class = model_class
-        self.name = get_model_name_from_class(model_class)
+        self.addon             = addon
+        self.model_class       = model_class
 
 class Analyzer:
     SKIPPINGS = ['hw_drivers', 'hw_escpos', 'hw_posbox_homepage', 'hw_l10n_eg_eta', 'l10n_eg_edi_eta']
@@ -151,17 +168,17 @@ class Analyzer:
             a = self.try_get_addon_from_path(addon_path)
             if a is not None: return a
         return None
-    def _recursive_load_addon(self, done, addon):
-        if addon.name in done: return
+    def _recursive_load_addon(self, did, addon):
+        if addon.name in did: return
         if not addon.loaded:
-            done.add(addon.name)
-            self._recursive_load_depends(done, addon)
+            did.add(addon.name)
+            self._recursive_load_depends(did, addon)
             import importlib
             m = importlib.import_module('odoo.addons.' + addon.name)
             addon._done_load(m)
-    def _recursive_load_depends(self, done, addon):
+    def _recursive_load_depends(self, did, addon):
         for d in addon.iter_depends():
-            self._recursive_load_addon(done, d)
+            self._recursive_load_addon(did, d)
     def _load_addon(self, addon):
         self._recursive_load_addon(set(), addon)
     def find_duplicate_addons(self):
