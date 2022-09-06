@@ -146,7 +146,7 @@ class Analyzer:
         elif a.name in self.addons:
             existing = self.addons[a.name]
             if a.addon_module_path != existing.addon_module_path:
-                raise Exception(f'Duplicate addon name: "{a.addon_module_path}" vs "{exising.addon_module_path}"')
+                raise Exception(f'Duplicate addon name: "{a.addon_module_path}" vs "{existing.addon_module_path}"')
             return existing
         else:
             self.addons[a.name] = a
