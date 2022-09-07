@@ -6,6 +6,7 @@ $PATH_ADDONS    = Join-Path $PATH_ROOT "addons"
 $CONFIG_FILE    = Join-Path $PATH_ROOT "{{ cookiecutter.project_slug }}.json"
 
 function localGitSource($path) {
+    # relative path does not work. use absolute path only
     return "file://$($path.Replace('\', '/'))"
 }
 
@@ -199,6 +200,30 @@ function checkOut($source, $branch, $target) {
     }
 }
 
+function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
+    if (Test-Path -PathType Container $target) { return }
+    if ($branch -eq $null) {
+        git clone --depth 1 --filter blob:none                  --sparse $source $target
+    } else {
+        git clone --depth 1 --filter blob:none --branch $branch --sparse $source $target
+    }
+    Push-Location $target
+    try {
+        foreach ($p in $dirParts) {
+            if ($p.StartsWith('./')) { $p = $p.SubString(1) }
+            if (-Not $p.StartsWith('/')) { $p = "/$p" }
+            git sparse-checkout add $p
+        }
+        foreach ($p in $fileParts) {
+            if ($p.StartsWith('./')) { $p = $p.SubString(1) }
+            if (-Not $p.StartsWith('/')) { $p = "/$p" }
+            git sparse-checkout add $p
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 function initializeSources($config) {
     if ($config.odoo -ne $null) {
         checkOut `
@@ -207,11 +232,27 @@ function initializeSources($config) {
             -target $PATH_ODOO
     }
     foreach ($addon in $config.addons.GetEnumerator()) {
+        if ($addon.Name.StartsWith('_')) { continue }
         [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
-        checkOut `
-            -source $addon.Value.source `
-            -branch $addon.Value.branch `
-            -target (Join-Path $PATH_ADDONS $addon.Name)
+        if ($addon.Value.parts.count -le 0) {
+            checkOut `
+              -source $addon.Value.source `
+              -branch $addon.Value.branch `
+              -target (Join-Path $PATH_ADDONS $addon.Name)
+        } else {
+            checkOutParts `
+              -source $addon.Value.source `
+              -branch $addon.Value.branch `
+              -target (Join-Path $PATH_ADDONS $addon.Name) `
+              -dirParts $addon.Value.parts `
+              -fileParts $addon.Value.requirements
+        }
+    }
+    foreach ($a in Get-SosoAddons) {
+        $target = (Join-Path $PATH_ADDONS "l10n-thailand" $a)
+        if (Test-Path -PathType Container $target) {
+            Remove-Item -r -force $target
+        }
     }
 }
 
@@ -235,6 +276,12 @@ function removeIfExists($target) {
     }
 }
 
+function resolve_cryptography_failure {
+    # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
+    python -m pip uninstall    cryptography
+    python -m pip install      cryptography==36.0.2
+}
+
 function initializeVenv {
     if (Test-Path -PathType Container $PATH_VENV) { return }
     pyenv exec python -m venv "$PATH_VENV"
@@ -250,11 +297,36 @@ function initializeVenv {
     python -m pip install    watchdog
     python -m pip install    odoorpc
 
-    # for enterprise
-    python -m pip install    dbfread
-    python -m pip install    google_auth
-    python -m pip install    dbfread
-    python -m pip install    phonenumbers
+    # resolve_cryptography_failure
+
+    $config = (loadConfig)
+    foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
+        $reqs = $null
+        if ($config.addons -ne $null) { $reqs = $config.addons[$addon.Name].requirements }
+        foreach ($r in $reqs) {
+            $path = Join-Path $addon.FullName $r
+            python -m pip install -r $path
+        }
+    }
+
+    if ($config.addons.ContainsKey("enterprise")) {
+        # for enterprise
+        python -m pip install    dbfread
+        python -m pip install    google_auth
+        python -m pip install    dbfread
+        python -m pip install    dbfread
+        python -m pip install    dbfread
+        python -m pip install    phonenumbers
+        python -m pip install    pdf417gen
+        python -m pip install    https://download.lfd.uci.edu/pythonlibs/archived/python_ldap-3.4.0-cp310-cp310-win_amd64.whl
+
+    }
+
+    if ($config.addons.ContainsKey("reporting-engine")) {
+        # for reporting-engine
+        python -m pip install    endesive
+        python -m pip install    bokeh
+    }
 
     # for dev
     python -m pip install    flake8
@@ -491,6 +563,9 @@ function Initialize-OdooServer {
     initializeBaseAndSaveConfig $config
 }
 
+    $p = $mpath.Replace("\", "\\")
+    return python -c "import os.path; print('\n'.join(eval(open(os.path.join('$p', '__manifest__.py')).read())['depends']))"
+
 Export-ModuleMember `
   -Function @(
       "Get-DefaultConfig"
@@ -504,4 +579,9 @@ Export-ModuleMember `
       "Install-AllInstallableAddons"
       "Invoke-OdooBin"
       "Test-Odoo"
+      "Show-Dependencies"
+      "Show-InternalDependencies"
+      "Get-SosoAddons"
+      "Get-InstallableSosoAddons"
+      "Install-AllSosoAddons"
   )
