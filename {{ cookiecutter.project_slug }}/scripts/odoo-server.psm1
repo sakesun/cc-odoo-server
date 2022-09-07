@@ -248,12 +248,6 @@ function initializeSources($config) {
               -fileParts $addon.Value.requirements
         }
     }
-    foreach ($a in Get-SosoAddons) {
-        $target = (Join-Path $PATH_ADDONS "l10n-thailand" $a)
-        if (Test-Path -PathType Container $target) {
-            Remove-Item -r -force $target
-        }
-    }
 }
 
 function Update-OdooServerSources {
@@ -297,7 +291,7 @@ function initializeVenv {
     python -m pip install    watchdog
     python -m pip install    odoorpc
 
-    # resolve_cryptography_failure
+    resolve_cryptography_failure
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
