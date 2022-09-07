@@ -563,8 +563,10 @@ function Initialize-OdooServer {
     initializeBaseAndSaveConfig $config
 }
 
+function getDependencies($mpath) {
     $p = $mpath.Replace("\", "\\")
     return python -c "import os.path; print('\n'.join(eval(open(os.path.join('$p', '__manifest__.py')).read())['depends']))"
+}
 
 Export-ModuleMember `
   -Function @(
