@@ -66,6 +66,8 @@ class AddonInfo:
         self.store = store
         self.name = name
         self.addon_module_path = addon_module_path
+    def __repr__(self):
+        return f'<{self.name}>'
     @cached_property
     def manifest(self):
         from os.path import isfile, join
@@ -125,10 +127,11 @@ class ModelInfo:
     is_new            = cached_property(lambda self: is_new_model(self.model_class))
     defined_fields    = cached_property(lambda self: list(iter_model_fields(self.model_class)))
     defined_functions = cached_property(lambda self: list(iter_model_functions(self.model_class)))
-
     def __init__(self, addon, model_class):
         self.addon             = addon
         self.model_class       = model_class
+    def __repr__(self):
+        return f'[{self.name}]'
 
 class Analyzer:
     SKIPPINGS = ['hw_drivers', 'hw_escpos', 'hw_posbox_homepage', 'hw_l10n_eg_eta', 'l10n_eg_edi_eta']
