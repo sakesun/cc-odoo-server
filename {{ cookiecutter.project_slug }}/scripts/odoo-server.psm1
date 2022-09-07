@@ -272,8 +272,8 @@ function removeIfExists($target) {
 
 function resolve_cryptography_failure {
     # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
-    python -m pip uninstall    cryptography
-    python -m pip install      cryptography==36.0.2
+    python -m pip uninstall    cryptography         --no-input
+    python -m pip install      cryptography==36.0.2 --no-input
 }
 
 function initializeVenv {
