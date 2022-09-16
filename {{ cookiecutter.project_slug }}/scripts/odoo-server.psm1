@@ -442,7 +442,10 @@ function Invoke-OdooBin {
     $watching_paths = getAllAddonPaths | Get-ChildItem | ? { $_.Name -in $watch }
     if ($watching_paths.Length -gt 0) {
         if ($ext.Length -eq 0) {
-            $ext = @("py"; "csv"; "xml"; "xls"; "xlsx"; "po"; "rst"; "html"; "css"; "js"; "ts"; "png"; "svg"; "jpg"; "ico")
+            $ext = @("py"; "csv"; "xls"; "xlsx"; "po"; "rst"; "html"; "css"; "js"; "ts"; "png"; "svg"; "jpg"; "ico")
+            if ($remaining -notcontains '--dev=xml') {
+                $ext += 'xml'
+            }
         }
         $python = '"' + $python + '"'
         $odoo_bin = '"' + $odoo_bin + '"'
