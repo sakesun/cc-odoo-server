@@ -3,6 +3,7 @@ $PATH_ROOT      = Join-Path $PSScriptRoot ".."
 $PATH_VENV      = Join-Path $PATH_ROOT "venv"
 $PATH_ODOO      = Join-Path $PATH_ROOT "odoo"
 $PATH_ADDONS    = Join-Path $PATH_ROOT "addons"
+$PATH_DATA      = Join-Path $PATH_ROOT "data"
 $CONFIG_FILE    = Join-Path $PATH_ROOT "{{ cookiecutter.project_slug }}.json"
 
 function localGitSource($path) {
@@ -29,7 +30,14 @@ function Get-DefaultConfig {
                         "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
                         "branch" = $branch
                         "dirs"   = @(".")
-                    }
+                    };
+                    "l10n-thailand": {
+                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
+                        "parts"  = @("l10n_th_withholding_tax")
+                        "branch" = $branch
+                        "dirs"   = @(".")
+                        "requirements" = @("requirements.txt")
+                    };
                 };
                 "db" = [ordered]@{
                     "server" = "127.0.0.1"
@@ -327,18 +335,21 @@ function initializeVenv {
 }
 
 function isValidAddonPath($p) {
+    # "addon path" is a path that has some valid "addon module path" inside
     if (-Not (Test-Path -PathType Container $p)) { return $false }
     $countDir = Get-ChildItem -Directory $p | Measure-Object | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
 
 function isValidAddonModulePath($p) {
+    # "addon module path" is a path that has "__manifest__".py inside.
     if (-Not (Test-Path -PathType Container $p)) { return $false }
     $countDir = Get-ChildItem -File -Filter __manifest__.py -Path $p | Measure-Object | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
 
 function addIfValidAddon {
+    # add each path in "paths" into output "list" if the path is a valid "addon path"
     param(
         [System.Collections.ArrayList] $list,
         [string[]] $paths
@@ -352,7 +363,11 @@ function addIfValidAddon {
 
 function getAllAddonPaths($config) {
     $addons = [System.Collections.ArrayList]@()
+
+    # adding odoo own addons path
     addIfValidAddon $addons "$PATH_ODOO/addons"
+
+    # adding addon paths from json config
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
         $dirs = $null
         if ($config.addons -ne $null) { $dirs = $config.addons[$addon.Name].dirs }
@@ -429,7 +444,7 @@ function Invoke-OdooBin {
     $python      = (Resolve-Path "$PATH_VENV/Scripts/python.exe").Path
     $odoo_bin    = (Resolve-Path "$PATH_ODOO/odoo-bin").Path
     $gevent_arg  = $gevent ? "gevent" : ""
-    $all_addons  = getAllAddonPaths
+    $all_addons  = getAllAddonPaths $(loadConfig)
     if (${Addons}.Length -gt 0) {
         $all_addons = $all_addons + $Addons
     }
@@ -439,7 +454,7 @@ function Invoke-OdooBin {
     }
     $arguments += "--addons-path=`"$($all_addons -join ',')`""
     $arguments += $remaining
-    $watching_paths = getAllAddonPaths | Get-ChildItem | ? { $_.Name -in $watch }
+    $watching_paths = getAllAddonPaths $(loadConfig) | Get-ChildItem | ? { $_.Name -in $watch }
     if ($watching_paths.Length -gt 0) {
         if ($ext.Length -eq 0) {
             $ext = @("py"; "csv"; "xls"; "xlsx"; "po"; "rst"; "html"; "css"; "js"; "ts"; "png"; "svg"; "jpg"; "ico")
@@ -519,6 +534,7 @@ function initializeBaseAndSaveConfig($config) {
         -d $config.db.name `
         -r $config.db.user `
         -w $config.db.pass `
+        --data-dir $PATH_DATA `
         --save `
         @arguments
 }
