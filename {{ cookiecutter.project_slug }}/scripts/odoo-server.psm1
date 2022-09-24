@@ -1,10 +1,17 @@
-$DEFAULT_BRANCH = "15.0"
-$PATH_ROOT      = Join-Path $PSScriptRoot ".."
-$PATH_VENV      = Join-Path $PATH_ROOT "venv"
-$PATH_ODOO      = Join-Path $PATH_ROOT "odoo"
-$PATH_ADDONS    = Join-Path $PATH_ROOT "addons"
-$PATH_DATA      = Join-Path $PATH_ROOT "data"
-$CONFIG_FILE    = Join-Path $PATH_ROOT "{{ cookiecutter.project_slug }}.json"
+# cookiecutter params
+$CONFIG_FILE_NAME = "{{ cookiecutter.project_slug }}.json"
+$DB_NAME          = "{{ cookiecutter.db_name }}"
+$DB_USER          = "{{ cookiecutter.db_user }}"
+$DB_PASS          = "{{ cookiecutter.db_pass }}"
+
+# global constants
+$DEFAULT_BRANCH   = "15.0"
+$PATH_ROOT        = Join-Path $PSScriptRoot ".."
+$PATH_VENV        = Join-Path $PATH_ROOT "venv"
+$PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
+$PATH_ADDONS      = Join-Path $PATH_ROOT "addons"
+$PATH_DATA        = Join-Path $PATH_ROOT "data"
+$CONFIG_FILE      = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
 
 function localGitSource($path) {
     # relative path does not work. use absolute path only
@@ -43,9 +50,9 @@ function Get-DefaultConfig {
                     "server" = "127.0.0.1"
                     "port"   = 5432
                     "root"   = "postgres"
-                    "name"   = "{{ cookiecutter.db_name }}"
-                    "user"   = "{{ cookiecutter.db_user }}"
-                    "pass"   = "{{ cookiecutter.db_pass }}"
+                    "name"   = $DB_NAME
+                    "user"   = $DB_USER
+                    "pass"   = $DB_PASS
                 }
                 "server" = [ordered]@{
                     "http-port"        = 8069
