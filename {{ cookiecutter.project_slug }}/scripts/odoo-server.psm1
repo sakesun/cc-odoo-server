@@ -38,7 +38,7 @@ function Get-DefaultConfig {
                         "branch" = $branch
                         "dirs"   = @(".")
                     };
-                    "l10n-thailand": {
+                    "l10n-thailand" = [ordered]@{
                         "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
                         "parts"  = @("l10n_th_withholding_tax")
                         "branch" = $branch
@@ -301,6 +301,7 @@ function initializeVenv {
     python -m pip install -r "$PATH_ODOO/requirements.txt"
     python -m pip install    psycopg2-binary   # psocopg2 does not work on Windows
     python -m pip install    pdfminer.six
+    python -m pip install    PyPDF2
     python -m pip install    ipython
     python -m pip install    ipdb
     python -m pip install    watchdog
