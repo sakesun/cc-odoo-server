@@ -293,7 +293,7 @@ function resolveCryptographyFailure {
 
 function revertToWerkzeug1 {
     python -m pip uninstall    werkzeug         --no-input
-    python -m pip install      werkzeug<2.0.0   --no-input
+    python -m pip install      "werkzeug<2.0.0" --no-input
 }
 
 function initializeVenv {
@@ -309,7 +309,6 @@ function initializeVenv {
     python -m pip install    pywin32
     python -m pip install    psycopg2-binary   # psocopg2 does not work on Windows
     python -m pip install    "PyPDF2<2.0.0"
-    # python -m pip install    PyPDF2==1.28.6
     python -m pip install    pdfminer.six
     python -m pip install    ipython
     python -m pip install    ipdb
