@@ -285,10 +285,15 @@ function removeIfExists($target) {
     }
 }
 
-function resolve_cryptography_failure {
+function resolveCryptographyFailure {
     # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
     python -m pip uninstall    cryptography         --no-input
     python -m pip install      cryptography==36.0.2 --no-input
+}
+
+function revertToWerkzeug1 {
+    python -m pip uninstall    werkzeug         --no-input
+    python -m pip install      werkzeug<2.0.0   --no-input
 }
 
 function initializeVenv {
@@ -299,15 +304,20 @@ function initializeVenv {
     python -m pip install --upgrade pip
     python -m pip install -e "$PATH_ODOO"
     python -m pip install -r "$PATH_ODOO/requirements.txt"
+    python -m pip install    chardet
+    python -m pip install    freezegun
+    python -m pip install    pywin32
     python -m pip install    psycopg2-binary   # psocopg2 does not work on Windows
+    python -m pip install    PyPDF2<2.0.0
+    # python -m pip install    PyPDF2==1.28.6
     python -m pip install    pdfminer.six
-    python -m pip install    PyPDF2
     python -m pip install    ipython
     python -m pip install    ipdb
     python -m pip install    watchdog
     python -m pip install    odoorpc
 
-    resolve_cryptography_failure
+    revertToWerkzeug1
+    # resolveCryptographyFailure
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
@@ -323,9 +333,6 @@ function initializeVenv {
         # for enterprise
         python -m pip install    dbfread
         python -m pip install    google_auth
-        python -m pip install    dbfread
-        python -m pip install    dbfread
-        python -m pip install    dbfread
         python -m pip install    phonenumbers
         python -m pip install    pdf417gen
         python -m pip install    https://download.lfd.uci.edu/pythonlibs/archived/python_ldap-3.4.0-cp310-cp310-win_amd64.whl
@@ -405,7 +412,7 @@ function Get-InstalledAddons {
 
 function Get-InstallableAddons {
     $all = Get-AllAddons
-    $exclusions = @("auth_ldap", "*l10n_*", "hw_*", "pos_blackbox_be")
+    $exclusions = @("auth_ldap", "*l10n_*", "hw_*", "pos_blackbox_be", "sale_ebay")
     $excluded = $all | ? {
         foreach ($exc in $exclusions) {
             if ($_ -Like $exc) {
