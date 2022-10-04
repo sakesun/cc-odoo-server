@@ -316,7 +316,7 @@ function initializeVenv {
     python -m pip install    odoorpc
 
     revertToWerkzeug1
-    # resolveCryptographyFailure
+    resolveCryptographyFailure   # required for OCA/OCB
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
