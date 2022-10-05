@@ -306,6 +306,7 @@ function initializeVenv {
     python -m pip install -r "$PATH_ODOO/requirements.txt"
     python -m pip install    chardet
     python -m pip install    freezegun
+    python -m pip install    jingtrang
     python -m pip install    pywin32
     python -m pip install    psycopg2-binary   # psocopg2 does not work on Windows
     python -m pip install    "PyPDF2<2.0.0"
