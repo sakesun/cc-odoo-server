@@ -287,17 +287,17 @@ function removeIfExists($target) {
 
 function resolveCryptographyFailure {
     # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
-    python -m pip uninstall    cryptography         --no-input
-    python -m pip install      cryptography==36.0.2 --no-input
+    python -m pip uninstall    cryptography          --no-input 2> NUL
+    python -m pip install      cryptography==36.0.2
 }
 
 function revertToWerkzeug1 {
-    python -m pip uninstall    werkzeug         --no-input 2> NUL
-    python -m pip install      "werkzeug<2.0.0" --no-input
+    python -m pip uninstall    werkzeug              --no-input 2> NUL
+    python -m pip install      "werkzeug<2.0.0"
 }
 
 function avoid_urllib3_ssl_warning {
-    python -m pip uninstall    urllib3
+    python -m pip uninstall    urllib3               --no-input 2> NUL
     python -m pip install      urllib3==1.26.11
 }
 
