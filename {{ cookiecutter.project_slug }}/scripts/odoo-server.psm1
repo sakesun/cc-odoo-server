@@ -292,7 +292,7 @@ function resolveCryptographyFailure {
 }
 
 function revertToWerkzeug1 {
-    python -m pip uninstall    werkzeug         --no-input
+    python -m pip uninstall    werkzeug         --no-input 2> NUL
     python -m pip install      "werkzeug<2.0.0" --no-input
 }
 
