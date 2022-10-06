@@ -298,7 +298,7 @@ function revertToWerkzeug1 {
 
 function avoid_urllib3_ssl_warning {
     python -m pip uninstall    urllib3
-    python -m pip uninstall    urllib3==1.26.11
+    python -m pip install      urllib3==1.26.11
 }
 
 function initializeVenv {
