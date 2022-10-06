@@ -285,13 +285,13 @@ function removeIfExists($target) {
     }
 }
 
-function resolveCryptographyFailure {
+function resolve_cryptography_failure {
     # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
     python -m pip uninstall    cryptography          --no-input 2> NUL
     python -m pip install      cryptography==36.0.2
 }
 
-function revertToWerkzeug1 {
+function revert_to_werkzeug_1 {
     python -m pip uninstall    werkzeug              --no-input 2> NUL
     python -m pip install      "werkzeug<2.0.0"
 }
@@ -323,9 +323,9 @@ function initializeVenv {
     python -m pip install    watchdog
     python -m pip install    odoorpc
 
-    revertToWerkzeug1
+    revert_to_werkzeug_1
     avoid_urllib3_ssl_warning
-    # resolveCryptographyFailure
+    resolve_cryptography_failure
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
