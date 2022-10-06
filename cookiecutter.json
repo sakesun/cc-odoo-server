@@ -1,7 +1,7 @@
 {
     "project_name": "An Odoo Project",
     "project_slug": "{{ cookiecutter.project_name.lower()|replace(' ', '-')|replace('.', '-')|trim() }}",
-    "db_name": "odoo",
-    "db_user": "odoo",
+    "db_name": "{{ cookiecutter.project_slug }}",
+    "db_user": "{{ cookiecutter.db_user }}",
     "db_pass": "pass"
 }
