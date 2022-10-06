@@ -296,6 +296,11 @@ function revertToWerkzeug1 {
     python -m pip install      "werkzeug<2.0.0" --no-input
 }
 
+function avoid_urllib3_ssl_warning {
+    python -m pip uninstall    urllib3
+    python -m pip uninstall    urllib3==1.26.11
+}
+
 function initializeVenv {
     if (Test-Path -PathType Container $PATH_VENV) { return }
     pyenv exec python -m venv "$PATH_VENV"
@@ -304,6 +309,8 @@ function initializeVenv {
     python -m pip install --upgrade pip
     python -m pip install -e "$PATH_ODOO"
     python -m pip install -r "$PATH_ODOO/requirements.txt"
+    python -m pip install    wheel
+    python -m pip install    num2word
     python -m pip install    chardet
     python -m pip install    freezegun
     python -m pip install    jingtrang
@@ -317,6 +324,7 @@ function initializeVenv {
     python -m pip install    odoorpc
 
     revertToWerkzeug1
+    avoid_urllib3_ssl_warning
     # resolveCryptographyFailure
 
     $config = (loadConfig)
