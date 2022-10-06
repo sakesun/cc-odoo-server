@@ -325,7 +325,7 @@ function initializeVenv {
 
     revert_to_werkzeug_1
     avoid_urllib3_ssl_warning
-    resolve_cryptography_failure
+    # resolve_cryptography_failure
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
