@@ -209,9 +209,9 @@ function Remove-OdooDatabaseAndUser {
 function checkOut($source, $branch, $target) {
     if (Test-Path -PathType Container $target) { return }
     if ($branch -eq $null) {
-        git clone --depth 1                  $source $target
+        git clone --depth 20                  $source $target
     } else {
-        git clone --depth 1 --branch $branch $source $target
+        git clone --depth 20 --branch $branch $source $target
     }
 }
 
@@ -317,7 +317,7 @@ function initializeVenv {
     python -m pip install    odoorpc
 
     revertToWerkzeug1
-    resolveCryptographyFailure   # required for OCA/OCB
+    # resolveCryptographyFailure
 
     $config = (loadConfig)
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
