@@ -1,0 +1,6 @@
+ipython
+ipdb
+watchdog
+odoorpc
+flake8
+freezegun

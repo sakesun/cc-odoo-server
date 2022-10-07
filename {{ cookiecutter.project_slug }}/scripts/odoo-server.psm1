@@ -5,7 +5,7 @@ $DB_USER          = "{{ cookiecutter.db_user }}"
 $DB_PASS          = "{{ cookiecutter.db_pass }}"
 
 # global constants
-$DEFAULT_BRANCH   = "15.0"
+$DEFAULT_BRANCH   = "16.0"
 $PATH_ROOT        = Join-Path $PSScriptRoot ".."
 $PATH_VENV        = Join-Path $PATH_ROOT "venv"
 $PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
@@ -20,48 +20,59 @@ function localGitSource($path) {
 
 function Get-DefaultConfig {
     $branch = $DEFAULT_BRANCH
-    $defaultContent = (
-        ConvertTo-Json -Depth 100 (
-            [ordered]@{
-                "odoo" = [ordered]@{
-                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
-                    "branch" = $branch
-                };
-                "addons" = [ordered]@{
-                    "enterprise" = [ordered]@{
-                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
-                        "branch" = $branch
-                        "dirs"   = @(".")
-                    };
-                    "design-themes" = [ordered]@{
-                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
-                        "branch" = $branch
-                        "dirs"   = @(".")
-                    };
-                    "l10n-thailand" = [ordered]@{
-                        "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
-                        "parts"  = @("l10n_th_withholding_tax")
-                        "branch" = $branch
-                        "dirs"   = @(".")
-                        "requirements" = @("requirements.txt")
-                    };
-                };
-                "db" = [ordered]@{
-                    "server" = "127.0.0.1"
-                    "port"   = 5432
-                    "root"   = "postgres"
-                    "name"   = $DB_NAME
-                    "user"   = $DB_USER
-                    "pass"   = $DB_PASS
+    $default = (
+        [ordered]@{
+            "db" = [ordered]@{
+                "server" = "127.0.0.1"
+                "port"   = 5432
+                "root"   = "postgres"
+                "name"   = $DB_NAME
+                "user"   = $DB_USER
+                "pass"   = $DB_PASS
+            }
+            "server" = [ordered]@{
+                "http-port"        = 8069
+                "longpolling-port" = 8072
+            }
+            "override" = [ordered]@{}
+            "override-recipes" = [ordered]@{
+                "15.0" = [ordered]@{
+                    "werkzeug"     = "<2.0.0"
+                    "urllib3"      = "==1.26.11"
                 }
-                "server" = [ordered]@{
-                    "http-port"        = 8069
-                    "longpolling-port" = 8072
+                "16.0" = [ordered]@{
+                    "werkzeug"     = "<2.0.0"
+                    "urllib3"      = "==1.26.11"
+                    "cryptography" = "==36.0.2"
                 }
             }
-        )
+            "odoo" = [ordered]@{
+                "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
+                "branch" = $branch
+            }
+            "addons" = [ordered]@{
+                "enterprise" = [ordered]@{
+                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
+                    "branch" = $branch
+                    "dirs"   = @(".")
+                }
+                "design-themes" = [ordered]@{
+                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
+                    "branch" = $branch
+                    "dirs"   = @(".")
+                }
+                "l10n-thailand" = [ordered]@{
+                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
+                    "parts"  = @("l10n_th_withholding_tax")
+                    "branch" = $branch
+                    "dirs"   = @(".")
+                    "requirements" = @("requirements.txt")
+                }
+            }
+        }
     )
-    return $defaultContent
+    $default['override'] = $default['override-recipes'][$DEFAULT_BRANCH]
+    return (ConvertTo-Json -Depth 100 $default)
 }
 
 function Build-DefaultConfig {
@@ -307,27 +318,17 @@ function initializeVenv {
     . $PATH_VENV/Scripts/activate.ps1
     python -m ensurepip   --upgrade
     python -m pip install --upgrade pip
-    python -m pip install -e "$PATH_ODOO"
-    python -m pip install -r "$PATH_ODOO/requirements.txt"
-    python -m pip install    wheel
-    python -m pip install    num2word
-    python -m pip install    chardet
-    python -m pip install    freezegun
-    python -m pip install    jingtrang
-    python -m pip install    pywin32
-    python -m pip install    psycopg2-binary   # psocopg2 does not work on Windows
-    python -m pip install    "PyPDF2<2.0.0"
-    python -m pip install    pdfminer.six
-    python -m pip install    ipython
-    python -m pip install    ipdb
-    python -m pip install    watchdog
-    python -m pip install    odoorpc
+    python -m pip install    wheel                          # make wheel first priority requirement
+    python -m pip install -e "$PATH_ODOO"                   # install Odoo source as package
+    python -m pip install -r "$PATH_ODOO/requirements.txt"  # install standard Odoo requirements
 
-    revert_to_werkzeug_1
-    avoid_urllib3_ssl_warning
-    # resolve_cryptography_failure
+    # Comfort error messages
+    Write-Output "*************************************************************************"
+    Write-Output "* Do not worry if there are errors in cryptography package installation *"
+    Write-Output "* It's ok                                                               *"
+    Write-Output "*************************************************************************"
 
-    $config = (loadConfig)
+    # Install requirements for each addons
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
         $reqs = $null
         if ($config.addons -ne $null) { $reqs = $config.addons[$addon.Name].requirements }
@@ -337,24 +338,29 @@ function initializeVenv {
         }
     }
 
+    # Install common requirements
+    python -m pip -r install (Join-Path $PSScriptRoot "requirements.txt")
+
+    # Install requirements for enterprise
     if ($config.addons.ContainsKey("enterprise")) {
-        # for enterprise
-        python -m pip install    dbfread
-        python -m pip install    google_auth
-        python -m pip install    phonenumbers
-        python -m pip install    pdf417gen
-        python -m pip install    https://download.lfd.uci.edu/pythonlibs/archived/python_ldap-3.4.0-cp310-cp310-win_amd64.whl
-
+        python -m pip -r install (Join-Path $PSScriptRoot "requirements_enterprise.txt")
     }
 
+    # Install requirements if reporting-engine is used
     if ($config.addons.ContainsKey("reporting-engine")) {
-        # for reporting-engine
-        python -m pip install    endesive
-        python -m pip install    bokeh
+        python -m pip -r install (Join-Path $PSScriptRoot "requirements_reporting_engine.txt")
     }
 
-    # for dev
-    python -m pip install    flake8
+    # Install requirements for development
+    python -m pip -r install (Join-Path $PSScriptRoot "requirements_develop.txt")
+
+    # Overriding packages
+    $config = (loadConfig)
+    if ($config.override.Count -gt 0) {
+        foreach ($req in $config.override.GetEnumerator()) {
+            python -m pip install "$($req.Name)$($req.Value)"
+        }
+    }
 }
 
 function isValidAddonPath($p) {

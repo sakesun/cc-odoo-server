@@ -1,0 +1,6 @@
+num2word
+jingtrang
+pywin32          ; sys_platform == 'win32'
+psycopg2-binary  ; sys_platform == 'win32'
+PyPDF2<2.0.0
+pdfminer.six
