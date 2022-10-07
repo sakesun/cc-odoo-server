@@ -34,7 +34,6 @@ function Get-DefaultConfig {
                 "http-port"        = 8069
                 "longpolling-port" = 8072
             }
-            "override" = [ordered]@{}
             "override-recipes" = [ordered]@{
                 "15.0" = [ordered]@{
                     "werkzeug"     = "<2.0.0"
@@ -46,6 +45,7 @@ function Get-DefaultConfig {
                     "cryptography" = "==36.0.2"
                 }
             }
+            "override" = [ordered]@{}
             "odoo" = [ordered]@{
                 "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
                 "branch" = $branch
@@ -71,7 +71,6 @@ function Get-DefaultConfig {
             }
         }
     )
-    $default['override'] = $default['override-recipes'][$DEFAULT_BRANCH]
     if ($DEFAULT_BRANCH -ge "16.0") {
         $default["server"].Remove("longpolling-port")
     }
@@ -315,6 +314,14 @@ function avoid_urllib3_ssl_warning {
     python -m pip install      urllib3==1.26.11
 }
 
+function overridePackages($dict) {
+    if ($dict.Count -gt 0) {
+        foreach ($item in $dict.GetEnumerator()) {
+            python -m pip install "$($item.Name)$($item.Value)"
+        }
+    }
+}
+
 function initializeVenv {
     if (Test-Path -PathType Container $PATH_VENV) { return }
     pyenv exec python -m venv "$PATH_VENV"
@@ -357,13 +364,13 @@ function initializeVenv {
     # Install requirements for development
     python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
 
-    # Overriding packages
+    # Recipe packages overriding
+    $branch = $config['odoo']['branch']
+    overridePackages $config['override_recipes'][$branch]
+
+    # Custom packages overriding
     $config = (loadConfig)
-    if ($config.override.Count -gt 0) {
-        foreach ($req in $config.override.GetEnumerator()) {
-            python -m pip install "$($req.Name)$($req.Value)"
-        }
-    }
+    overridePackages $config['override']
 }
 
 function isValidAddonPath($p) {
