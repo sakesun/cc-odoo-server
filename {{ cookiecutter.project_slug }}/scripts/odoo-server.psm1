@@ -298,22 +298,6 @@ function removeIfExists($target) {
     }
 }
 
-function resolve_cryptography_failure {
-    # https://serverfault.com/questions/1099606/ansible-openssl-error-with-apt-module
-    python -m pip uninstall    cryptography          --no-input 2> NUL
-    python -m pip install      cryptography==36.0.2
-}
-
-function revert_to_werkzeug_1 {
-    python -m pip uninstall    werkzeug              --no-input 2> NUL
-    python -m pip install      "werkzeug<2.0.0"
-}
-
-function avoid_urllib3_ssl_warning {
-    python -m pip uninstall    urllib3               --no-input 2> NUL
-    python -m pip install      urllib3==1.26.11
-}
-
 function overridePackages($dict) {
     if ($dict.Count -gt 0) {
         foreach ($item in $dict.GetEnumerator()) {
@@ -364,12 +348,17 @@ function initializeVenv {
     # Install requirements for development
     python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
 
-    # Recipe packages overriding
+    # Install requirements for development
+    python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
+
+    # to override packages based on config
+    $config = (loadConfig)
+
+    # packages overriding by recipe
     $branch = $config['odoo']['branch']
     overridePackages $config['override_recipes'][$branch]
 
-    # Custom packages overriding
-    $config = (loadConfig)
+    # custom packages overriding
     overridePackages $config['override']
 }
 
