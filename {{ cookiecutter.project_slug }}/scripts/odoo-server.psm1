@@ -339,20 +339,20 @@ function initializeVenv {
     }
 
     # Install common requirements
-    python -m pip -r install (Join-Path $PSScriptRoot "requirements.txt")
+    python -m pip install -r (Join-Path $PSScriptRoot "requirements.txt")
 
     # Install requirements for enterprise
     if ($config.addons.ContainsKey("enterprise")) {
-        python -m pip -r install (Join-Path $PSScriptRoot "requirements_enterprise.txt")
+        python -m pip install -r (Join-Path $PSScriptRoot "requirements_enterprise.txt")
     }
 
     # Install requirements if reporting-engine is used
     if ($config.addons.ContainsKey("reporting-engine")) {
-        python -m pip -r install (Join-Path $PSScriptRoot "requirements_reporting_engine.txt")
+        python -m pip install -r (Join-Path $PSScriptRoot "requirements_reporting_engine.txt")
     }
 
     # Install requirements for development
-    python -m pip -r install (Join-Path $PSScriptRoot "requirements_develop.txt")
+    python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
 
     # Overriding packages
     $config = (loadConfig)
