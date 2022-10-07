@@ -550,7 +550,7 @@ function initializeBaseAndSaveConfig($config) {
     if ($config.server -ne $null) {
         $arguments += "--http-port=$($config.server['http-port'])"
         $longpollingPort = $config.server['longpolling-port']
-        if ([string]::IsNullOrWhiteSpace($longpollingPort)) {
+        if (-not [string]::IsNullOrWhiteSpace($longpollingPort)) {
             $arguments += "--longpolling-port=$($longpollingPort)"
         }
     }
