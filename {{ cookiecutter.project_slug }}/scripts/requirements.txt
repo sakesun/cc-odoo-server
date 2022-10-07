@@ -1,3 +1,4 @@
+chardet
 num2word
 jingtrang
 pywin32          ; sys_platform == 'win32'
