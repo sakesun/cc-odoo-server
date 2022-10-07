@@ -72,6 +72,9 @@ function Get-DefaultConfig {
         }
     )
     $default['override'] = $default['override-recipes'][$DEFAULT_BRANCH]
+    if ($DEFAULT_BRANCH -ge "16.0") {
+        $default["server"].Remove("longpolling-port")
+    }
     return (ConvertTo-Json -Depth 100 $default)
 }
 
@@ -546,7 +549,10 @@ function initializeBaseAndSaveConfig($config) {
     $arguments = @()
     if ($config.server -ne $null) {
         $arguments += "--http-port=$($config.server['http-port'])"
-        $arguments += "--longpolling-port=$($config.server['longpolling-port'])"
+        $longpollingPort = $config.server['longpolling-port']
+        if ([string]::IsNullOrWhiteSpace($longpollingPort)) {
+            $arguments += "--longpolling-port=$($longpollingPort)"
+        }
     }
     $baseInstalled = (tableExists $config "ir_module_module") -And (addonInstalled $config "base")
     if (-Not $baseInstalled) {
