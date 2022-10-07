@@ -356,7 +356,7 @@ function initializeVenv {
 
     # packages overriding by recipe
     $branch = $config['odoo']['branch']
-    overridePackages $config['override_recipes'][$branch]
+    overridePackages $config['override-recipes'][$branch]
 
     # custom packages overriding
     overridePackages $config['override']
