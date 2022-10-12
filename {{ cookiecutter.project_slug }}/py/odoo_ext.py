@@ -18,7 +18,6 @@ def _create_env(uid, context):
     return Environment(cr, uid, context)
 
 def create_super_env(context=None):
-    if context is None: context = {}
     from odoo import SUPERUSER_ID
     if context is None: context = {}
     return _create_env(SUPERUSER_ID, context)
