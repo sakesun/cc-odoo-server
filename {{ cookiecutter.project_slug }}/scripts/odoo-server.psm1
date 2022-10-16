@@ -390,6 +390,12 @@ function addIfValidAddon {
 }
 
 function getAllAddonPaths($config) {
+    # Note from Odoo 14 Development Cookbook:
+    #   "The value of the addons_path variable is expected to be a
+    #   comma-separated list of directories. Relative paths are
+    #   accepted, but they are relative to the current working directory
+    #   and therefore should be avoided in the configuration file."
+
     $addons = [System.Collections.ArrayList]@()
 
     # adding odoo own addons path
