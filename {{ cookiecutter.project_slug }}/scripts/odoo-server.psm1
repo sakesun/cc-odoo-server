@@ -486,7 +486,7 @@ function Invoke-OdooBin {
     if (-Not [string]::IsNullOrEmpty($gevent_arg)){
         $arguments += $gevent_arg
     }
-    $arguments += "--addons-path=`"$($all_addons -join ',')`""
+    $arguments += "--addons-path=$($all_addons -join ',')"
     $arguments += $remaining
     $watching_paths = getAllAddonPaths $(loadConfig) | Get-ChildItem | ? { $_.Name -in $watch }
     if ($watching_paths.Length -gt 0) {
