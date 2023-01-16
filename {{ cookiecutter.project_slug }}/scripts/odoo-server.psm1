@@ -63,7 +63,7 @@ function Get-DefaultConfig {
                 }
                 "l10n-thailand" = [ordered]@{
                     "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
-                    "parts"  = @("l10n_th_withholding_tax")
+                    "parts"  = @("l10n_th_account_tax")
                     "branch" = $branch
                     "dirs"   = @(".")
                     "requirements" = @("requirements.txt")
@@ -231,22 +231,25 @@ function checkOut($source, $branch, $target) {
 function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
     if (Test-Path -PathType Container $target) { return }
     if ($branch -eq $null) {
-        git clone --depth 1 --filter blob:none                  --sparse $source $target
+        git clone --no-checkout --depth 1 --filter blob:none                  --sparse $source $target
     } else {
-        git clone --depth 1 --filter blob:none --branch $branch --sparse $source $target
+        git clone --no-checkout --depth 1 --filter blob:none --branch $branch --sparse $source $target
     }
     Push-Location $target
     try {
         foreach ($p in $dirParts) {
-            if ($p.StartsWith('./')) { $p = $p.SubString(1) }
-            if (-Not $p.StartsWith('/')) { $p = "/$p" }
+            if ($p.StartsWith('./')) { $p = $p.SubString(2) }
+            # No longer work in "Cone" mode
+            #   if (-Not $p.StartsWith('/')) { $p = "/$p" }
             git sparse-checkout add $p
         }
         foreach ($p in $fileParts) {
-            if ($p.StartsWith('./')) { $p = $p.SubString(1) }
-            if (-Not $p.StartsWith('/')) { $p = "/$p" }
+            if ($p.StartsWith('./')) { $p = $p.SubString(2) }
+            # No longer work in "Cone" mode
+            # if (-Not $p.StartsWith('/')) { $p = "/$p" }
             git sparse-checkout add $p
         }
+        git checkout
     } finally {
         Pop-Location
     }
