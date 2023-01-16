@@ -220,38 +220,32 @@ function Remove-OdooDatabaseAndUser {
 }
 
 function checkOut($source, $branch, $target) {
-    if (Test-Path -PathType Container $target) { return }
-    if ($branch -eq $null) {
-        git clone --depth 1                  $source $target
-    } else {
-        git clone --depth 1 --branch $branch $source $target
-    }
+    checkOutParts $source $branch $target $null $null
 }
 
 function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
     if (Test-Path -PathType Container $target) { return }
-    if ($branch -eq $null) {
-        git clone --no-checkout --depth 1 --filter blob:none                  --sparse $source $target
-    } else {
-        git clone --no-checkout --depth 1 --filter blob:none --branch $branch --sparse $source $target
-    }
-    Push-Location $target
+    mkdir $target | pushd
     try {
-        foreach ($p in $dirParts) {
-            if ($p.StartsWith('./')) { $p = $p.SubString(2) }
-            # No longer work in "Cone" mode
-            #   if (-Not $p.StartsWith('/')) { $p = "/$p" }
-            git sparse-checkout add $p
+        git init
+        git remote add origin $source
+        if ($branch -eq $null) {
+            git fetch --depth 1 origin master
+        } else {
+            git fetch --depth 1 origin $branch
         }
-        foreach ($p in $fileParts) {
-            if ($p.StartsWith('./')) { $p = $p.SubString(2) }
-            # No longer work in "Cone" mode
-            # if (-Not $p.StartsWith('/')) { $p = "/$p" }
-            git sparse-checkout add $p
+        $allParts = $dirParts + $fileParts  # sparse-checkout always add all root files, however
+        if ($allParts.length -gt 0) {
+            git sparse-checkout init --cone
+            foreach ($p in $allParts) {
+                git sparse-checkout add $p
+            }
         }
-        git checkout
+        git checkout FETCH_HEAD
+    } catch {
+        throw
     } finally {
-        Pop-Location
+        popd
     }
 }
 
