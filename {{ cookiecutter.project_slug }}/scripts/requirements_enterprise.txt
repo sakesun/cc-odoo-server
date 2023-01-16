@@ -2,4 +2,3 @@ dbfread
 google_auth
 phonenumbers
 pdf417gen
-https://download.lfd.uci.edu/pythonlibs/archived/python_ldap-3.4.0-cp310-cp310-win_amd64.whl

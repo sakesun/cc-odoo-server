@@ -345,9 +345,6 @@ function initializeVenv {
     # Install requirements for development
     python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
 
-    # Install requirements for development
-    python -m pip install -r (Join-Path $PSScriptRoot "requirements_develop.txt")
-
     # to override packages based on config
     $config = (loadConfig)
 
