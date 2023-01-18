@@ -490,8 +490,6 @@ function Invoke-OdooBin {
                 $ext += 'xml'
             }
         }
-        $python = '"' + $python + '"'
-        $odoo_bin = '"' + $odoo_bin + '"'
         if ('-u' -NotIn $arguments) {
             $watching_modules = ($watching_paths | select -ExpandProperty Name) -join ','
             $arguments += @("-u"; $watching_modules)
@@ -500,7 +498,7 @@ function Invoke-OdooBin {
         $nodemon_arguments = @( "-x"; "$($exec)";
                                 "-e"; "$($ext -join ' ')" )
         foreach ($w in $watching_paths) {
-            $nodemon_arguments += @("-w"; ('"' + $w.FullName + '"'))
+            $nodemon_arguments += @("-w"; ($w.FullName))
         }
         $command = 'nodemon'
         $arguments = $nodemon_arguments
