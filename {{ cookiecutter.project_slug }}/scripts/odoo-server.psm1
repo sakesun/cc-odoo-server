@@ -623,9 +623,4 @@ Export-ModuleMember `
       "Install-AllInstallableAddons"
       "Invoke-OdooBin"
       "Test-Odoo"
-      "Show-Dependencies"
-      "Show-InternalDependencies"
-      "Get-SosoAddons"
-      "Get-InstallableSosoAddons"
-      "Install-AllSosoAddons"
   )
