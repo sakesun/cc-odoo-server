@@ -473,8 +473,8 @@ function Invoke-OdooBin {
     $odoo_bin    = (Resolve-Path "$PATH_ODOO/odoo-bin").Path
     $gevent_arg  = $gevent ? "gevent" : ""
     $all_addons  = getAllAddonPaths $(loadConfig)
-    if (${Addons}.Length -gt 0) {
-        $all_addons = $all_addons + $Addons
+    if (${addons}.Length -gt 0) {
+        $all_addons = $all_addons + $addons
     }
     $arguments = @()
     if (-Not [string]::IsNullOrEmpty($gevent_arg)){
