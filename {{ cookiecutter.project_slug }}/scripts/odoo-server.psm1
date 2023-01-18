@@ -256,9 +256,9 @@ function initializeSources($config) {
             -branch $config.odoo.branch `
             -target $PATH_ODOO
     }
+    [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
     foreach ($addon in $config.addons.GetEnumerator()) {
         if ($addon.Name.StartsWith('_')) { continue }
-        [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
         if ($addon.Value.parts.count -le 0) {
             checkOut `
               -source $addon.Value.source `
