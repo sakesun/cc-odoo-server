@@ -558,14 +558,16 @@ function initializeBaseAndSaveConfig($config) {
           -i base `
           @argumenst
     }
+    $all_addons  = getAllAddonPaths $(loadConfig)
     Invoke-OdooBin -- `
-        --stop-after-init `
-        -d $config.db.name `
-        -r $config.db.user `
-        -w $config.db.pass `
-        --data-dir $PATH_DATA `
-        --save `
-        @arguments
+      --stop-after-init `
+      -d $config.db.name `
+      -r $config.db.user `
+      -w $config.db.pass `
+      --data-dir $PATH_DATA `
+      --addons-path=$($all_addons -join ',') `
+      --save `
+      @arguments
 }
 
 function Install-AllInstallableAddons {
