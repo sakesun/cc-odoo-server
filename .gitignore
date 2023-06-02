@@ -132,3 +132,4 @@ dmypy.json
 /{{ cookiecutter.project_slug }}/addons/
 /{{ cookiecutter.project_slug }}/odoo-server-config.json
 /{{ cookiecutter.project_slug }}/venv/
+*~
