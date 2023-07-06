@@ -49,7 +49,6 @@ function Get-DefaultConfig {
             "odoo" = [ordered]@{
                 "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
                 "branch" = $branch
-                "tag"    =
             }
             "addons" = [ordered]@{
                 "enterprise" = [ordered]@{
@@ -279,34 +278,36 @@ function initializeSources($config) {
     if ($config.odoo -ne $null) {
         if ($config.odoo.source -ne $null) {
             checkOut `
-              -source  $config.odoo.source `
-              -branch  $config.odoo.branch `
-              -target  $PATH_ODOO
-        }
-        else {
-            $version = ($config.odoo.source ?? $DEFAULT_BRANCH)
-            $tag     = ($config.odoo.tag)
-            downloadAndExtractOdoo `
-              -version $version `
-              -tag     $tag `
-              -target  $PATH_ODOO
+              -source $config.odoo.source `
+              -branch $config.odoo.branch `
+              -target $PATH_ODOO
         }
     }
+    else {
+        $version = ($config.odoo.source ?? $DEFAULT_BRANCH)
+        $tag     = ($config.odoo.tag)
+        downloadAndExtractOdoo `
+          -version $version `
+          -tag     $tag `
+          -target  $PATH_ODOO
+    }
     [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
-    foreach ($addon in $config.addons.GetEnumerator()) {
-        if ($addon.Name.StartsWith('_')) { continue }
-        if ($addon.Value.parts.count -le 0) {
-            checkOut `
-              -source $addon.Value.source `
-              -branch $addon.Value.branch `
-              -target (Join-Path $PATH_ADDONS $addon.Name)
-        } else {
-            checkOutParts `
-              -source $addon.Value.source `
-              -branch $addon.Value.branch `
-              -target (Join-Path $PATH_ADDONS $addon.Name) `
-              -dirParts $addon.Value.parts `
-              -fileParts $addon.Value.requirements
+    if ($config.addons -ne $null) {
+        foreach ($addon in $config.addons.GetEnumerator()) {
+            if ($addon.Name.StartsWith('_')) { continue }
+            if ($addon.Value.parts.count -le 0) {
+                checkOut `
+                  -source $addon.Value.source `
+                  -branch $addon.Value.branch `
+                  -target (Join-Path $PATH_ADDONS $addon.Name)
+            } else {
+                checkOutParts `
+                  -source $addon.Value.source `
+                  -branch $addon.Value.branch `
+                  -target (Join-Path $PATH_ADDONS $addon.Name) `
+                  -dirParts $addon.Value.parts `
+                  -fileParts $addon.Value.requirements
+            }
         }
     }
 }
@@ -316,11 +317,12 @@ function Update-OdooServerSources {
     Push-Location $PATH_ODOO
     git pull
     Pop-Location
-
-    foreach ($addon in $config.addons.GetEnumerator()) {
-        Push-Location (Join-Path $PATH_ADDONS $addon.Name)
-        git pull
-        Pop-Location
+    if ($config.addons -ne $null) {
+        foreach ($addon in $config.addons.GetEnumerator()) {
+            Push-Location (Join-Path $PATH_ADDONS $addon.Name)
+            git pull
+            Pop-Location
+        }
     }
 }
 
@@ -369,13 +371,17 @@ function initializeVenv {
     python -m pip install -r (Join-Path $PSScriptRoot "requirements.txt")
 
     # Install requirements for enterprise
-    if ($config.addons.ContainsKey("enterprise")) {
-        python -m pip install -r (Join-Path $PSScriptRoot "requirements_enterprise.txt")
+    if ($config.addons -ne $null) {
+        if ($config.addons.ContainsKey("enterprise")) {
+            python -m pip install -r (Join-Path $PSScriptRoot "requirements_enterprise.txt")
+        }
     }
 
     # Install requirements if reporting-engine is used
-    if ($config.addons.ContainsKey("reporting-engine")) {
-        python -m pip install -r (Join-Path $PSScriptRoot "requirements_reporting_engine.txt")
+    if ($config.addons -ne $null) {
+        if ($config.addons.ContainsKey("reporting-engine")) {
+            python -m pip install -r (Join-Path $PSScriptRoot "requirements_reporting_engine.txt")
+        }
     }
 
     # Install requirements for development
@@ -385,11 +391,14 @@ function initializeVenv {
     $config = (loadConfig)
 
     # packages overriding by recipe
-    $branch = $config['odoo']['branch']
-    overridePackages $config['override-recipes'][$branch]
+    $branch = $config.odoo?.branch
+    $recipe = $config.odoo?['override-receipes']?[$branch]
+    if ($recipe -ne $null) { overridePackages $recipe }
 
     # custom packages overriding
-    overridePackages $config['override']
+    if ($config.override -ne $null) {
+        overridePackages $config.override
+    }
 }
 
 function isValidAddonPath($p) {
