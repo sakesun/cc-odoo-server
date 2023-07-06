@@ -49,6 +49,7 @@ function Get-DefaultConfig {
             "odoo" = [ordered]@{
                 "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
                 "branch" = $branch
+                "tag"    =
             }
             "addons" = [ordered]@{
                 "enterprise" = [ordered]@{
@@ -249,12 +250,47 @@ function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
     }
 }
 
+function downloadAndExtractOdoo ($version, $tag, $target) {
+    if ($tag -eq $null) { $tag = "latest" }
+    $filename = "odoo_$version.$tag.tar.gz"
+    $uri = "https://nightly.odoo.com/$version/nightly/src/$filename"
+    downloadAndExtract -uri $uri -target $target
+}
+
+function downloadAndExtract ($uri, $target) {
+    $tmp = [System.IO.Path]::GetTempFileName()
+    try {
+        Invoke-WebRequest -Uri $uri -OutFile $tmp
+        $extracted = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+        [System.IO.Directory]::CreateDirectory($extracted)
+        try {
+            tar xvzf $tmp -C $extracted
+            $root = (Get-ChildItem $extracted | Select-Object -First 1)
+            Move-Item $root/* $target
+        } finally {
+            Remove-Item -Recurse $extracted
+        }
+    } finally {
+        Remove-Item -Path    $tmp
+    }
+}
+
 function initializeSources($config) {
     if ($config.odoo -ne $null) {
-        checkOut `
-            -source $config.odoo.source `
-            -branch $config.odoo.branch `
-            -target $PATH_ODOO
+        if ($config.odoo.source -ne $null) {
+            checkOut `
+              -source  $config.odoo.source `
+              -branch  $config.odoo.branch `
+              -target  $PATH_ODOO
+        }
+        else {
+            $version = ($config.odoo.source ?? $DEFAULT_BRANCH)
+            $tag     = ($config.odoo.tag)
+            downloadAndExtractOdoo `
+              -version $version `
+              -tag     $tag `
+              -target  $PATH_ODOO
+        }
     }
     [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
     foreach ($addon in $config.addons.GetEnumerator()) {
