@@ -40,9 +40,7 @@ function Get-DefaultConfig {
                     "urllib3"      = "==1.26.11"
                 }
                 "16.0" = [ordered]@{
-                    "werkzeug"     = "<2.0.0"
-                    "urllib3"      = "==1.26.11"
-                    "cryptography" = "==36.0.2"
+                    "pyOpenSSL"    = "~=22.1"
                 }
             }
             "override" = [ordered]@{}
@@ -336,18 +334,18 @@ function removeIfExists($target) {
 function overridePackages($dict) {
     if ($dict.Count -gt 0) {
         foreach ($item in $dict.GetEnumerator()) {
-            python -m pip install "$($item.Name)$($item.Value)"
+            python -m pip uninstall -y "$($item.Name)"
+            python -m pip install      "$($item.Name)$($item.Value)"
         }
     }
 }
 
 function initializeVenv {
     if (Test-Path -PathType Container $PATH_VENV) { return }
-    pyenv exec python -m venv "$PATH_VENV"
+    python -m venv "$PATH_VENV"
     . $PATH_VENV/Scripts/activate.ps1
     python -m ensurepip   --upgrade
     python -m pip install --upgrade pip
-    python -m pip install    wheel                          # make wheel first priority requirement
     python -m pip install -e "$PATH_ODOO"                   # install Odoo source as package
     python -m pip install -r "$PATH_ODOO/requirements.txt"  # install standard Odoo requirements
 
@@ -392,7 +390,7 @@ function initializeVenv {
 
     # packages overriding by recipe
     $branch = $config.odoo?.branch
-    $recipe = $config.odoo?['override-receipes']?[$branch]
+    $recipe = $config['override-recipes']?[$branch]
     if ($recipe -ne $null) { overridePackages $recipe }
 
     # custom packages overriding
