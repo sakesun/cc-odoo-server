@@ -4,6 +4,7 @@ $ODOO_IMAGE = "odoo:16.0"
 $POD_NAME = "odoo"
 $ODOO_DB_NAME = "odoo"
 $ODOO_DB_USER = "odoo"
+$ODOO_DB_PORT = "5432"
 
 function Remove-PodmanVolume {
     param (
@@ -49,7 +50,7 @@ function Ensure-OdooPod {
     if (! $?) {
         podman pod create `
           --name $POD_NAME `
-          --publish 5432:5432 `
+          --publish $ODOO_DB_PORT:$ODOO_DB_PORT `
           --publish 8069:8069 `
           --publish 8071:8071 `
           --publish 8072:8072
@@ -62,7 +63,7 @@ function Run-OdooDbDetached {
       --pod $POD_NAME `
       --detach `
       --env POSTGRES_HOST_AUTH_METHOD=trust `
-      --env POSTGRES_PORT=5432 `
+      --env POSTGRES_PORT=$ODOO_DB_PORT `
       --volume var-lib-postgresql-data:/var/lib/postgresql/data `
       --rm `
       $POSTGRES_IMAGE
@@ -73,13 +74,13 @@ function Wait-OdooDb {
         podman run `
           --pod $POD_NAME `
           --env POSTGRES_HOST_AUTH_METHOD=trust `
-          --env POSTGRES_PORT=5432 `
+          --env POSTGRES_PORT=$ODOO_DB_PORT `
           --volume var-lib-postgresql-data:/var/lib/postgresql/data `
           --rm `
           $POSTGRES_IMAGE `
           pg_isready `
           --host=localhost `
-          --port=5432 `
+          --port=$ODOO_DB_PORT `
           --username=postgres
           if ($?) {
               break
@@ -102,7 +103,7 @@ function Create-OdooUserAndDatabase {
       $POSTGRES_IMAGE
       psql `
       --host=localhost `
-      --port=5432 `
+      --port=$ODOO_DB_PORT `
       --username=postgres `
       --no-password `
       --command "create user odoo" `
@@ -111,11 +112,17 @@ function Create-OdooUserAndDatabase {
       --command "alter database odoo owner to odoo"
 }
 
+function Run-RunOdooImage {
+    param (
+
+    )
+}
+
 function Install-OdooBase {
     podman run `
       --pod $POD_NAME `
       --env DB_PORT_5432_TCP_ADDR=localhost `
-      --env DB_PORT_5432_TCP_PORT=5432 `
+      --env DB_PORT_5432_TCP_PORT=$ODOO_DB_PORT `
       --env DB_ENV_POSTGRES_USER=odoo `
       --env DB_ENV_POSTGRES_PASSWORD= `
       --volume var-lib-odoo:/var/lib/odoo `
@@ -130,7 +137,7 @@ function Run-OdooApp {
       --name ${POD_NAME}-app `
       --pod $POD_NAME `
       --env DB_PORT_5432_TCP_ADDR=localhost `
-      --env DB_PORT_5432_TCP_PORT=5432 `
+      --env DB_PORT_5432_TCP_PORT=$ODOO_DB_PORT `
       --env DB_ENV_POSTGRES_USER=odoo `
       --env DB_ENV_POSTGRES_PASSWORD= `
       --volume var-lib-odoo:/var/lib/odoo `
