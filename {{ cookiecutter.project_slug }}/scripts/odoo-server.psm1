@@ -5,7 +5,8 @@ $DB_USER          = "{{ cookiecutter.db_user }}"
 $DB_PASS          = "{{ cookiecutter.db_pass }}"
 
 # global constants
-$DEFAULT_BRANCH   = "16.0"
+$DEFAULT_VERSION  = "16.0"
+$DEFAULT_BRANCH   = $DEFAULT_VERSION
 $PATH_ROOT        = Join-Path $PSScriptRoot ".."
 $PATH_VENV        = Join-Path $PATH_ROOT "venv"
 $PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
@@ -69,7 +70,7 @@ function Get-DefaultConfig {
             }
         }
     )
-    if ($DEFAULT_BRANCH -ge "16.0") {
+    if ($DEFAULT_VERSION -ge "16.0") {
         $default["server"].Remove("longpolling-port")
     }
     return (ConvertTo-Json -Depth 100 $default)
@@ -247,47 +248,12 @@ function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
     }
 }
 
-function downloadAndExtractOdoo ($version, $tag, $target) {
-    if ($tag -eq $null) { $tag = "latest" }
-    $filename = "odoo_$version.$tag.tar.gz"
-    $uri = "https://nightly.odoo.com/$version/nightly/src/$filename"
-    downloadAndExtract -uri $uri -target $target
-}
-
-function downloadAndExtract ($uri, $target) {
-    $tmp = [System.IO.Path]::GetTempFileName()
-    try {
-        Invoke-WebRequest -Uri $uri -OutFile $tmp
-        $extracted = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-        [System.IO.Directory]::CreateDirectory($extracted)
-        try {
-            tar xvzf $tmp -C $extracted
-            $root = (Get-ChildItem $extracted | Select-Object -First 1)
-            Move-Item $root/* $target
-        } finally {
-            Remove-Item -Recurse $extracted
-        }
-    } finally {
-        Remove-Item -Path    $tmp
-    }
-}
-
-function initializeSources($config) {
-    if ($config.odoo -ne $null) {
-        if ($config.odoo.source -ne $null) {
-            checkOut `
-              -source $config.odoo.source `
-              -branch $config.odoo.branch `
-              -target $PATH_ODOO
-        }
-    }
-    else {
-        $version = ($config.odoo.source ?? $DEFAULT_BRANCH)
-        $tag     = ($config.odoo.tag)
-        downloadAndExtractOdoo `
-          -version $version `
-          -tag     $tag `
-          -target  $PATH_ODOO
+function initializeSources ($config) {
+    if (useOdooFromSource $config) {
+        checkOut `
+          -source $config.odoo.source `
+          -branch $config.odoo.branch `
+          -target $PATH_ODOO
     }
     [void] (New-Item -Force -ItemType Directory $PATH_ADDONS)
     if ($config.addons -ne $null) {
@@ -307,6 +273,30 @@ function initializeSources($config) {
                   -fileParts $addon.Value.requirements
             }
         }
+    }
+}
+
+function downloadAndInstallOdooNightly ($config) {
+    $version = $config.odoo?.version ?? $DEFAULT_VERSION
+    $tag     = $config.odoo?.tag ?? "latest"
+    $filename = "odoo_$version.$tag.tar.gz"
+    $uri = "https://nightly.odoo.com/$version/nightly/src/$filename"
+    $tmp = [System.IO.Path]::GetTempFileName()
+    try {
+        Invoke-WebRequest -Uri $uri -OutFile $tmp
+        $extracted = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+        [System.IO.Directory]::CreateDirectory($extracted)
+        try {
+            tar xvzf $tmp -C $extracted
+            $root = (Get-ChildItem $extracted | Select-Object -First 1)
+            Push-Location $root
+            python setup.py install
+            Pop-Location
+        } finally {
+            Remove-Item -Recurse $extracted
+        }
+    } finally {
+        Remove-Item -Path    $tmp
     }
 }
 
@@ -340,20 +330,36 @@ function overridePackages($dict) {
     }
 }
 
-function initializeVenv {
+function useOdooFromSource ($config) {
+    return $config.odoo?.source -ne $null
+}
+
+function useOdooNightlyInstall ($config) {
+    return -Not (useOdooFromSource $config)
+}
+
+function initializeVenv ($config) {
     if (Test-Path -PathType Container $PATH_VENV) { return }
     python -m venv "$PATH_VENV"
     . $PATH_VENV/Scripts/activate.ps1
     python -m ensurepip   --upgrade
     python -m pip install --upgrade pip
-    python -m pip install -e "$PATH_ODOO"                   # install Odoo source as package
-    python -m pip install -r "$PATH_ODOO/requirements.txt"  # install standard Odoo requirements
+
+
+    if (useOdooFromSource $config) {
+        python -m pip install -e "$PATH_ODOO"                   # install Odoo source as package
+        python -m pip install -r "$PATH_ODOO/requirements.txt"  # install standard Odoo requirements
+    }
+
+    if (useOdooNightlyInstall $config) {
+        downloadAndInstallOdooNightly $config
+    }
 
     # Comfort error messages
-    Write-Output "*************************************************************************"
-    Write-Output "* Do not worry if there are errors in cryptography package installation *"
-    Write-Output "* It's ok                                                               *"
-    Write-Output "*************************************************************************"
+    Write-Host "*************************************************************************"
+    Write-Host "* Do not worry if there are errors in cryptography package installation *"
+    Write-Host "* It's ok                                                               *"
+    Write-Host "*************************************************************************"
 
     # Install requirements for each addons
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
@@ -513,7 +519,7 @@ function Invoke-OdooBin {
         $remaining
     )
     $python      = (Resolve-Path "$PATH_VENV/Scripts/python.exe").Path
-    $odoo_bin    = (Resolve-Path "$PATH_ODOO/odoo-bin").Path
+    $odoo_bin    = (Resolve-Path "$PATH_VENV/Scripts/odoo").Path
     $gevent_arg  = $gevent ? "gevent" : ""
     $all_addons  = getAllAddonPaths $(loadConfig)
     if (${addons}.Length -gt 0) {
@@ -641,7 +647,7 @@ function Initialize-OdooServer {
     if ($Reinitialize) {
         removeIfExists $PATH_VENV
     }
-    initializeVenv
+    initializeVenv $config
 
     # db
     if ($Reinitialize) { dropDatabaseAndUser $config }
