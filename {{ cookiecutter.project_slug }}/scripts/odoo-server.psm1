@@ -46,24 +46,24 @@ function Get-DefaultConfig {
             }
             "override" = [ordered]@{}
             "odoo" = [ordered]@{
-                "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "odoo")
+                "source" = "https://github.com/odoo/odoo.git"
                 "branch" = $branch
             }
             "addons" = [ordered]@{
                 "enterprise" = [ordered]@{
-                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "enterprise")
+                    "source" = "https://github.com/odoo/enterprise.git"
                     "branch" = $branch
                     "dirs"   = @(".")
                 }
                 "design-themes" = [ordered]@{
-                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "design-themes")
+                    "source" = "https://github.com/odoo/design-themes.git"
                     "branch" = $branch
                     "dirs"   = @(".")
                 }
                 "l10n-thailand" = [ordered]@{
-                    "source" = localGitSource (Join-Path $PSScriptRoot ".." ".." "odoo-src" "l10n-thailand")
+                    "source" = "https://github.com/OCA/l10n-thailand.git"
                     "parts"  = @("l10n_th_account_tax")
-                    "branch" = $branch
+                    "branch" = "15.0"
                     "dirs"   = @(".")
                     "requirements" = @("requirements.txt")
                 }
@@ -219,7 +219,38 @@ function Remove-OdooDatabaseAndUser {
 }
 
 function checkOut($source, $branch, $target) {
+    $DOWNLOAD_INSTEAD = $true
+    if ($DOWNLOAD_INSTEAD -And $source.StartsWith("https://github.com/")) {
+        try {
+            downloadFromGithub $source $branch $target
+            return
+        } catch {}
+    }
+    # otherwise
     checkOutParts $source $branch $target $null $null
+}
+
+function downloadFromGithub ($source, $branch, $target) {
+    if (Test-Path -PathType Container $target) { return }
+    $b = [UriBuilder]::new($source)
+    $b.Host = "codeload.github.com"
+    $b.Path = $b.Path.TrimEnd(".git") + "/zip/refs/heads/$branch"
+    $uri = $b.ToString()
+    $tmp = [System.IO.Path]::GetTempFileName()
+    try {
+        Invoke-WebRequest -Uri $uri -OutFile $tmp
+        $extracted = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+        [System.IO.Directory]::CreateDirectory($extracted)
+        try {
+            unzip $tmp -d $extracted
+            $root = (Get-ChildItem $extracted | Select-Object -First 1)
+            Move-Item $root/* $target
+        } finally {
+            Remove-Item -Recurse $extracted
+        }
+    } finally {
+        Remove-Item -Path $tmp
+    }
 }
 
 function checkOutParts($source, $branch, $target, $dirParts, $fileParts) {
