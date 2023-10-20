@@ -242,7 +242,7 @@ function downloadFromGithub ($source, $branch, $target) {
         $extracted = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
         [System.IO.Directory]::CreateDirectory($extracted)
         try {
-            unzip $tmp -d $extracted
+            unzip -o $tmp -d $extracted
             $root = (Get-ChildItem $extracted | Select-Object -First 1)
             Move-Item $root/* $target
         } finally {
