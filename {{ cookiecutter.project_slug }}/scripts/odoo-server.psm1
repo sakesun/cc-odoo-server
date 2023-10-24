@@ -13,6 +13,7 @@ $PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
 $PATH_ADDONS      = Join-Path $PATH_ROOT "addons"
 $PATH_DATA        = Join-Path $PATH_ROOT "data"
 $CONFIG_FILE      = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
+$DEMO_DATA        = $True
 
 function localGitSource($path) {
     # relative path does not work. use absolute path only
@@ -629,21 +630,22 @@ function initializeBaseAndSaveConfig($config) {
         }
     }
     $baseInstalled = (tableExists $config "ir_module_module") -And (addonInstalled $config "base")
+    $common_args = @("--stop-after-init")
+    if (-Not $DEMO_DATA) {
+        $common_args = $common_args + @("--without-demo=all")
+    }
+    $common_args = $common_args + @(
+        "-d", $config.db.name,
+        "-r", $config.db.user,
+        "-w", $config.db.pass
+    )
     if (-Not $baseInstalled) {
-        Invoke-OdooBin -- `
-          --stop-after-init `
-          -d $config.db.name `
-          -r $config.db.user `
-          -w $config.db.pass `
+        Invoke-OdooBin -- @common_args `
           -i base `
-          @argumenst
+          @arguments
     }
     $all_addons  = getAllAddonPaths $(loadConfig)
-    Invoke-OdooBin -- `
-      --stop-after-init `
-      -d $config.db.name `
-      -r $config.db.user `
-      -w $config.db.pass `
+    Invoke-OdooBin -- @common_args `
       --data-dir $PATH_DATA `
       --addons-path=$($all_addons -join ',') `
       --save `
