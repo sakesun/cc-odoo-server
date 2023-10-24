@@ -620,7 +620,17 @@ function Test-Odoo {
         @remaining
 }
 
+function ensureRequiredToolsAreInstalled {
+    if ((Get-Command -Name "wkhtmltopdf" -ErrorAction Ignore) -eq $null) {
+        scoop install wkhtmltopdf
+    }
+    if ((Get-Command -Name "xmllint" -ErrorAction Ignore) -eq $null) {
+        scoop install wkhtmltopdf
+    }
+}
+
 function initializeBaseAndSaveConfig($config) {
+    ensureRequiredToolsAreInstalled
     $arguments = @()
     if ($config.server -ne $null) {
         $arguments += "--http-port=$($config.server['http-port'])"
