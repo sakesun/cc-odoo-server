@@ -373,6 +373,9 @@ function useOdooNightlyInstall ($config) {
 function initializeVenv ($config) {
     if (Test-Path -PathType Container $PATH_VENV) { return }
     python -m venv "$PATH_VENV"
+    New-Item -ItemType file -Force `
+      -Path  (Join-Path "$PATH_VENV" "Lib" "site-packages" "cc-odoo-server.pth") `
+      -Value "../../../py"
     . $PATH_VENV/Scripts/activate.ps1
     python -m ensurepip   --upgrade
     python -m pip install --upgrade pip
