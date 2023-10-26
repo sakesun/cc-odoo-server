@@ -1,10 +1,11 @@
 # Odoo extra utilities
 
-def odoo_ref(*path):
-    from os.path import dirname, realpath, join
-    import odoo
-    THIS_PATH = dirname(realpath(odoo.__file__))
-    return join(THIS_PATH, '..', *path)
+def this_path(*path):
+    from os.path import dirname, normpath, join
+    return normpath(join(dirname(__file__), *path))
+
+def base_path(*path):
+    return this_path('..', *path)
 
 loaded = False
 
@@ -12,7 +13,7 @@ def load_config(filename=None):
     global loaded
     if loaded: raise Exception('Config is already loaded.')
     from odoo.tools import config
-    if filename is None: filename = odoo_ref('odoo.conf')
+    if filename is None: filename = base_path('odoo.conf')
     config.parse_config(['-c', filename])
     loaded = True
 

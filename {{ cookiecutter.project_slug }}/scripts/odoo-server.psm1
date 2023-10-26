@@ -13,6 +13,7 @@ $PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
 $PATH_ADDONS      = Join-Path $PATH_ROOT "addons"
 $PATH_DATA        = Join-Path $PATH_ROOT "data"
 $CONFIG_FILE      = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
+$ODOO_CONF        = Join-Path $PATH_ROOT "odoo.conf"
 $DEMO_DATA        = $True
 
 function localGitSource($path) {
@@ -560,7 +561,7 @@ function Invoke-OdooBin {
     if (${addons}.Length -gt 0) {
         $all_addons = $all_addons + $addons
     }
-    $arguments = @()
+    $arguments = @("-c"; $ODOO_CONF)
     if (-Not [string]::IsNullOrEmpty($gevent_arg)){
         $arguments += $gevent_arg
     }
@@ -628,7 +629,7 @@ function ensureRequiredToolsAreInstalled {
         scoop install wkhtmltopdf
     }
     if ((Get-Command -Name "xmllint" -ErrorAction Ignore) -eq $null) {
-        scoop install wkhtmltopdf
+        scoop install xmllint
     }
 }
 
@@ -698,6 +699,12 @@ function Initialize-OdooServer {
     # db
     if ($Reinitialize) { dropDatabaseAndUser $config }
     createDatabaseAndUser $config
+
+    # data dir and odoo.conf
+    if ($Reinitialize) {
+        removeIfExists $PATH_DATA
+        if (Test-Path $ODOO_CONF) { Remove-Item $ODOO_CONF }
+    }
 
     initializeBaseAndSaveConfig $config
 }
