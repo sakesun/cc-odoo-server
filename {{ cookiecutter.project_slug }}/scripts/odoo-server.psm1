@@ -1,20 +1,21 @@
 # cookiecutter params
-$CONFIG_FILE_NAME = "{{ cookiecutter.project_slug }}.json"
-$DB_NAME          = "{{ cookiecutter.db_name }}"
-$DB_USER          = "{{ cookiecutter.db_user }}"
-$DB_PASS          = "{{ cookiecutter.db_pass }}"
+$CONFIG_FILE_NAME   = "{{ cookiecutter.project_slug }}.json"
+$DB_NAME            = "{{ cookiecutter.db_name }}"
+$DB_USER            = "{{ cookiecutter.db_user }}"
+$DB_PASS            = "{{ cookiecutter.db_pass }}"
 
 # global constants
-$DEFAULT_VERSION  = "16.0"
-$DEFAULT_BRANCH   = $DEFAULT_VERSION
-$PATH_ROOT        = Join-Path $PSScriptRoot ".."
-$PATH_VENV        = Join-Path $PATH_ROOT "venv"
-$PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
-$PATH_ADDONS      = Join-Path $PATH_ROOT "addons"
-$PATH_DATA        = Join-Path $PATH_ROOT "data"
-$CONFIG_FILE      = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
-$ODOO_CONF        = Join-Path $PATH_ROOT "odoo.conf"
-$DEMO_DATA        = $True
+$DEFAULT_VERSION    = "16.0"
+$DEFAULT_BRANCH     = $DEFAULT_VERSION
+$PATH_ROOT          = Join-Path $PSScriptRoot ".."
+$PATH_VENV          = Join-Path $PATH_ROOT "venv"
+$PATH_ODOO          = Join-Path $PATH_ROOT "odoo"
+$PATH_ADDONS        = Join-Path $PATH_ROOT "addons"
+$PATH_CUSTOM_ADDONS = Join-Path $PATH_ROOT "custom-addons"
+$PATH_DATA          = Join-Path $PATH_ROOT "data"
+$CONFIG_FILE        = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
+$ODOO_CONF          = Join-Path $PATH_ROOT "odoo.conf"
+$DEMO_DATA          = $True
 
 function localGitSource($path) {
     # relative path does not work. use absolute path only
@@ -407,6 +408,10 @@ function initializeVenv ($config) {
         }
     }
 
+    # Install setuptools and wheel as suggested in Odoo doc
+    # https://www.odoo.com/documentation/16.0/administration/install/source.html#dependencies
+    python -m pip install setuptools wheel
+
     # Install common requirements
     python -m pip install -r (Join-Path $PSScriptRoot "requirements.txt")
 
@@ -444,14 +449,19 @@ function initializeVenv ($config) {
 function isValidAddonPath($p) {
     # "addon path" is a path that has some valid "addon module path" inside
     if (-Not (Test-Path -PathType Container $p)) { return $false }
-    $countDir = Get-ChildItem -Directory $p | Measure-Object | Select-Object -ExpandProperty Count
+    $countDir = Get-ChildItem -Directory $p `
+      | Where-Object { isValidAddonModulePath($_) } `
+      | Measure-Object `
+      | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
 
 function isValidAddonModulePath($p) {
     # "addon module path" is a path that has "__manifest__".py inside.
     if (-Not (Test-Path -PathType Container $p)) { return $false }
-    $countDir = Get-ChildItem -File -Filter __manifest__.py -Path $p | Measure-Object | Select-Object -ExpandProperty Count
+    $countDir = Get-ChildItem -File -Filter __manifest__.py -Path $p `
+      | Measure-Object `
+      | Select-Object -ExpandProperty Count
     return ($countDir -gt 0)
 }
 
@@ -479,6 +489,9 @@ function getAllAddonPaths($config) {
 
     # adding odoo own addons path
     addIfValidAddon $addons "$PATH_ODOO/addons"
+
+    # adding custom addons path
+    addIfValidAddon $addons $PATH_CUSTOM_ADDONS
 
     # adding addon paths from json config
     foreach ($addon in (Get-ChildItem $PATH_ADDONS)) {
@@ -565,7 +578,7 @@ function Invoke-OdooBin {
     if (-Not [string]::IsNullOrEmpty($gevent_arg)){
         $arguments += $gevent_arg
     }
-    $arguments += "--addons-path=$($all_addons -join ',')"
+    $arguments += "--addons-path=$($all_addons -join ',')"j
     $arguments += $remaining
     $watching_paths = getAllAddonPaths $(loadConfig) | Get-ChildItem | ? { $_.Name -in $watch }
     if ($watching_paths.Length -gt 0) {
