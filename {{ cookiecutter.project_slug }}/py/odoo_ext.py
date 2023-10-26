@@ -36,6 +36,6 @@ def create_env(uid=None, context=None):
         return create_super_env(context)
     else:
         if context is None:
-            superenv = create_super_env()
-            context = superenv['res.users'].browse(uid).context_get()
+            super_env = create_super_env()
+            context = super_env['res.users'].browse(uid).context_get()
         return _create_env(uid, context)
