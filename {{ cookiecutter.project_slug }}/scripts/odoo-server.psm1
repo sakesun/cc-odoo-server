@@ -5,17 +5,16 @@ $DB_USER            = "{{ cookiecutter.db_user }}"
 $DB_PASS            = "{{ cookiecutter.db_pass }}"
 
 # global constants
-$DEFAULT_VERSION    = "16.0"
-$DEFAULT_BRANCH     = $DEFAULT_VERSION
-$PATH_ROOT          = Join-Path $PSScriptRoot ".."
-$PATH_VENV          = Join-Path $PATH_ROOT "venv"
-$PATH_ODOO          = Join-Path $PATH_ROOT "odoo"
-$PATH_ADDONS        = Join-Path $PATH_ROOT "addons"
-$PATH_CUSTOM_ADDONS = Join-Path $PATH_ROOT "custom-addons"
-$PATH_DATA          = Join-Path $PATH_ROOT "data"
-$CONFIG_FILE        = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
-$ODOO_CONF          = Join-Path $PATH_ROOT "odoo.conf"
-$DEMO_DATA          = $True
+$DEFAULT_VERSION  = "16.0"
+$DEFAULT_BRANCH   = $DEFAULT_VERSION
+$PATH_ROOT        = Join-Path $PSScriptRoot ".."
+$PATH_VENV        = Join-Path $PATH_ROOT "venv"
+$PATH_ODOO        = Join-Path $PATH_ROOT "odoo"
+$PATH_ADDONS      = Join-Path $PATH_ROOT "addons"
+$PATH_DATA        = Join-Path $PATH_ROOT "data"
+$CONFIG_FILE      = Join-Path $PATH_ROOT $CONFIG_FILE_NAME
+$ODOO_CONF        = Join-Path $PATH_ROOT "odoo.conf"
+$DEMO_DATA        = $True
 
 function localGitSource($path) {
     # relative path does not work. use absolute path only
@@ -27,48 +26,48 @@ function Get-DefaultConfig {
     $default = (
         [ordered]@{
             "db" = [ordered]@{
-                "server" = "127.0.0.1"
-                "port"   = 5432
-                "root"   = "postgres"
-                "name"   = $DB_NAME
-                "user"   = $DB_USER
-                "pass"   = $DB_PASS
+                "server" = "127.0.0.1";
+                "port"   = $DB_PORT;
+                "root"   = "postgres";
+                "name"   = $DB_NAME;
+                "user"   = $DB_USER;
+                "pass"   = $DB_PASS;
             }
             "server" = [ordered]@{
-                "http-port"        = 8069
-                "longpolling-port" = 8072
+                "http-port"        = 8069;
+                "longpolling-port" = 8072;
             }
             "override-recipes" = [ordered]@{
                 "15.0" = [ordered]@{
-                    "werkzeug"     = "<2.0.0"
-                    "urllib3"      = "==1.26.11"
+                    "werkzeug"     = "<2.0.0";
+                    "urllib3"      = "==1.26.11";
                 }
                 "16.0" = [ordered]@{
-                    "pyOpenSSL"    = "~=22.1"
+                    "pyOpenSSL"    = "~=22.1";
                 }
             }
             "override" = [ordered]@{}
             "odoo" = [ordered]@{
-                "source" = "https://github.com/odoo/odoo.git"
-                "branch" = $branch
+                "source" = "https://github.com/odoo/odoo.git";
+                "branch" = $branch;
             }
             "addons" = [ordered]@{
                 "enterprise" = [ordered]@{
-                    "source" = "https://github.com/odoo/enterprise.git"
-                    "branch" = $branch
-                    "dirs"   = @(".")
+                    "source" = "https://github.com/odoo/enterprise.git";
+                    "branch" = $branch;
+                    "dirs"   = @(".");
                 }
                 "design-themes" = [ordered]@{
-                    "source" = "https://github.com/odoo/design-themes.git"
-                    "branch" = $branch
-                    "dirs"   = @(".")
+                    "source" = "https://github.com/odoo/design-themes.git";
+                    "branch" = $branch;
+                    "dirs"   = @(".");
                 }
                 "l10n-thailand" = [ordered]@{
-                    "source" = "https://github.com/OCA/l10n-thailand.git"
-                    "parts"  = @("l10n_th_account_tax")
-                    "branch" = "15.0"
-                    "dirs"   = @(".")
-                    "requirements" = @("requirements.txt")
+                    "source" = "https://github.com/OCA/l10n-thailand.git";
+                    "parts"  = @("l10n_th_account_tax");
+                    "branch" = "15.0";
+                    "dirs"   = @(".");
+                    "requirements" = @("requirements.txt");
                 }
             }
         }
@@ -184,9 +183,9 @@ function userExists($config) {
 
 function tableExists($config, $table) {
     $sql = @(
-        "select tablename from pg_catalog.pg_tables"
-        "  where schemaname = 'public'"
-        "    and tablename  = '$table'"
+        "select tablename from pg_catalog.pg_tables";
+        "  where schemaname = 'public'";
+        "    and tablename  = '$table'";
     ) -Join "`n"
     $rows = queryWithRoot $config $sql
     return queryExists($rows)
@@ -523,7 +522,7 @@ function Get-InstalledAddons {
 
 function Get-InstallableAddons {
     $all = Get-AllAddons
-    $exclusions = @("auth_ldap", "*l10n_*", "hw_*", "pos_blackbox_be", "sale_ebay")
+    $exclusions = @("auth_ldap"; "*l10n_*"; "hw_*"; "pos_blackbox_be"; "sale_ebay")
     $excluded = $all | ? {
         foreach ($exc in $exclusions) {
             if ($_ -Like $exc) {
@@ -578,7 +577,7 @@ function Invoke-OdooBin {
     if (-Not [string]::IsNullOrEmpty($gevent_arg)){
         $arguments += $gevent_arg
     }
-    $arguments += "--addons-path=$($all_addons -join ',')"j
+    $arguments += "--addons-path=$($all_addons -join ',')"
     $arguments += $remaining
     $watching_paths = getAllAddonPaths $(loadConfig) | Get-ChildItem | ? { $_.Name -in $watch }
     if ($watching_paths.Length -gt 0) {
@@ -649,6 +648,21 @@ function ensureRequiredToolsAreInstalled {
 function initializeBaseAndSaveConfig($config) {
     ensureRequiredToolsAreInstalled
     $arguments = @()
+    $all_addons  = getAllAddonPaths $config
+
+    # add configurations that will goes to odoo.conf
+    $arguments += @(
+        "--data-dir="    + $PATH_DATA;
+        "--addons-path=" + $($all_addons -join ',');
+    )
+    $arguments += @(
+        "--database="    + $config.db.name;
+        "--db_user="     + $config.db.user;
+        "--db_password=" + $config.db.pass;
+    )
+    if ($config.db.port) {
+        $arguments += "--db_port=" + $config.db.port
+    }
     if ($config.server -ne $null) {
         $arguments += "--http-port=$($config.server['http-port'])"
         $longpollingPort = $config.server['longpolling-port']
@@ -656,27 +670,15 @@ function initializeBaseAndSaveConfig($config) {
             $arguments += "--longpolling-port=$($longpollingPort)"
         }
     }
-    $baseInstalled = (tableExists $config "ir_module_module") -And (addonInstalled $config "base")
-    $common_args = @("--stop-after-init")
     if (-Not $DEMO_DATA) {
-        $common_args = $common_args + @("--without-demo=all")
+        $arguments += "--without-demo=all"
     }
-    $common_args = $common_args + @(
-        "-d", $config.db.name,
-        "-r", $config.db.user,
-        "-w", $config.db.pass
-    )
+    $baseInstalled = (tableExists $config "ir_module_module") -And (addonInstalled $config "base")
     if (-Not $baseInstalled) {
-        Invoke-OdooBin -- @common_args `
-          -i base `
-          @arguments
+        Invoke-OdooBin -- @arguments --save --stop-after-init --init=base
+    } else {
+        Invoke-OdooBin               --save --stop-after-init --init=base
     }
-    $all_addons  = getAllAddonPaths $(loadConfig)
-    Invoke-OdooBin -- @common_args `
-      --data-dir $PATH_DATA `
-      --addons-path=$($all_addons -join ',') `
-      --save `
-      @arguments
 }
 
 function Install-AllInstallableAddons {
@@ -729,15 +731,15 @@ function getDependencies($mpath) {
 
 Export-ModuleMember `
   -Function @(
-      "Get-DefaultConfig"
-      "Build-DefaultConfig"
-      "Remove-OdooDatabaseAndUser"
-      "Initialize-OdooServer"
-      "Update-OdooServerSources"
-      "Get-AllAddons"
-      "Get-InstalledAddons"
-      "Get-InstallableAddons"
-      "Install-AllInstallableAddons"
-      "Invoke-OdooBin"
-      "Test-Odoo"
+      "Get-DefaultConfig";
+      "Build-DefaultConfig";
+      "Remove-OdooDatabaseAndUser";
+      "Initialize-OdooServer";
+      "Update-OdooServerSources";
+      "Get-AllAddons";
+      "Get-InstalledAddons";
+      "Get-InstallableAddons";
+      "Install-AllInstallableAddons";
+      "Invoke-OdooBin";
+      "Test-Odoo";
   )
