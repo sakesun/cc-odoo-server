@@ -35,7 +35,6 @@ function Get-DefaultConfig {
             }
             "server" = [ordered]@{
                 "http-port"        = 8069;
-                "longpolling-port" = 8072;
             }
             "override-recipes" = [ordered]@{
                 "15.0" = [ordered]@{
@@ -72,8 +71,8 @@ function Get-DefaultConfig {
             }
         }
     )
-    if ($DEFAULT_VERSION -ge "16.0") {
-        $default["server"].Remove("longpolling-port")
+    if ($DEFAULT_VERSION -le "16.0") {
+        $default["server"].Add("longpolling-port", 8072)
     }
     return (ConvertTo-Json -Depth 100 $default)
 }
@@ -677,7 +676,7 @@ function initializeBaseAndSaveConfig($config) {
     if (-Not $baseInstalled) {
         Invoke-OdooBin -- @arguments --save --stop-after-init --init=base
     } else {
-        Invoke-OdooBin               --save --stop-after-init --init=base
+        Invoke-OdooBin -- @arguments --save --stop-after-init
     }
 }
 
