@@ -5,7 +5,7 @@ $DB_USER            = "{{ cookiecutter.db_user }}"
 $DB_PASS            = "{{ cookiecutter.db_pass }}"
 
 # global constants
-$DEFAULT_VERSION  = "16.0"
+$DEFAULT_VERSION  = "17.0"
 $DEFAULT_BRANCH   = $DEFAULT_VERSION
 $PATH_ROOT        = Join-Path $PSScriptRoot ".."
 $PATH_VENV        = Join-Path $PATH_ROOT "venv"
@@ -42,7 +42,13 @@ function Get-DefaultConfig {
                     "urllib3"      = "==1.26.11";
                 }
                 "16.0" = [ordered]@{
-                    "pyOpenSSL"    = "~=22.1";
+                    "pyOpenSSL"    = ">=22.1";
+                }
+                "17.0" = [ordered]@{
+                    "pyOpenSSL"    = ">=22.1";
+                }
+                "master" = [ordered]@{
+                    "pyOpenSSL"    = ">=22.1";
                 }
             }
             "override" = [ordered]@{}
