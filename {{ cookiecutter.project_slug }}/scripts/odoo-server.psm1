@@ -734,6 +734,37 @@ function getDependencies($mpath) {
     return python -c "import os.path; print('\n'.join(eval(open(os.path.join('$p', '__manifest__.py')).read())['depends']))"
 }
 
+function Export-OdooSchema {
+    param ($config)
+    if ($config -eq $null) {
+        $config = loadConfig
+    }
+    pg_dump `
+      --dbname=$($config.db.name) `
+      --username=$($config.db.user) `
+      --no-password `
+      --schema-only `
+      --no-owner `
+      --no-privileges
+}
+
+$PATTERN_SEPARATOR = "(?m)(^--\n--.*\n--\n\n)((?s).*?(?-s))(?=^--\n--.*\n--\n\n)"
+$PATTERN_NAME = "\WName:\s*(\w+)"
+$PATTERN_TYPE = "\WType:\s*(\w+)"
+
+function Show-OdooSchema {
+    $s = Join-String -InputObject $(Export-OdooSchema) -Separator "`n"
+    foreach ($m in [Regex]::Matches($s, $PATTERN_SEPARATOR)) {
+        $head = $m.Groups[1]
+        $body = $m.Groups[2]
+        # Write-Host $head
+        # Write-Host $body
+        $name = [Regex]::Match($head, $PATTERN_NAME)
+        $type = [Regex]::Match($head, $PATTERN_TYPE)
+        Write-Host "$type`: $name"
+    }
+    # Better move to Python :)
+}
 Export-ModuleMember `
   -Function @(
       "Get-DefaultConfig";
@@ -747,4 +778,6 @@ Export-ModuleMember `
       "Install-AllInstallableAddons";
       "Invoke-OdooBin";
       "Test-Odoo";
+      "Export-OdooSchema"
+      "Show-OdooSchema"
   )
